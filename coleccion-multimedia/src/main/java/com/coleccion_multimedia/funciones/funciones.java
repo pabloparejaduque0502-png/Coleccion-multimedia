@@ -1,4 +1,4 @@
-package com.funciones;
+package com.coleccion_multimedia.funciones;
 
 import com.coleccion_multimedia.clases.ElementoMultimedia;
 import com.coleccion_multimedia.clases.TipoMultimedia;
