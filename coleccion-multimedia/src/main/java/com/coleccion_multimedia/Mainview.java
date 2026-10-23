@@ -3,6 +3,7 @@ package com.coleccion_multimedia;
 import com.coleccion_multimedia.clases.ElementoMultimedia;
 import com.coleccion_multimedia.clases.TipoMultimedia;
 import com.coleccion_multimedia.funciones.funciones;
+import com.coleccion_multimedia.icon.Estrellas;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
@@ -15,6 +16,7 @@ import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
+import com.vaadin.flow.component.html.Span;
 
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Akatsuki Media - Mi Colección")
@@ -23,11 +25,12 @@ public class MainView extends VerticalLayout {
     public MainView() {
         setClassName("main-view");
 
-        // 1. Crear el objeto Dialog y configurar su título
+        //crecacion del boton para agregar nuevos elementos
+
         Dialog dialogFormulario = new Dialog();
         dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
 
-        // 2. Crear los campos de entrada de texto
+       //creaacion de los campos de entrada de texto
         TextField txtTitulo = new TextField("Título");
         ComboBox<TipoMultimedia> cbTipo = new ComboBox<>("Tipo");
         cbTipo.setItems(TipoMultimedia.values());
@@ -35,31 +38,41 @@ public class MainView extends VerticalLayout {
         TextField txtGenero = new TextField("Género");
         TextField txtAnio = new TextField("Año");
         TextField txtCreador = new TextField("Creador (Director/Artista)");
-        TextField txtCalificacion = new TextField("Calificación");
+        Estrellas ratingCalificacion = new Estrellas();
+        Span lblCalificacion = new Span("Calificación");
+        lblCalificacion.getStyle().set("font-size", "var(--lumo-font-size-s)");
+        lblCalificacion.getStyle().set("color", "var(--lumo-secondary-text-color)");
+        lblCalificacion.getStyle().set("font-weight", "500");
+
+        // 3. Empaquetar la etiqueta y las estrellas en una cajita vertical local
+        VerticalLayout campoCalificacion = new VerticalLayout(lblCalificacion, ratingCalificacion);
+        campoCalificacion.setPadding(false);
+        campoCalificacion.setSpacing(false);
+        
         TextField txtEstado = new TextField("Estado");
 
-        // 3. Crear el botón Guardar para el interior del Dialog
+        //Crear el botón Guardar para el interior del Dialog
         Button btnGuardar = new Button("Guardar", event -> {
 
-    // 1. Validar que ningún campo esté vacío o sin seleccionar
+    //Validaciones al presionar el boton guardar
     if (txtTitulo.isEmpty() || cbTipo.getValue() == null || txtGenero.isEmpty() || 
-        txtAnio.isEmpty() || txtCreador.isEmpty() || txtCalificacion.isEmpty() || txtEstado.isEmpty()) {
+        txtAnio.isEmpty() || txtCreador.isEmpty() || ratingCalificacion.valor == 0 || txtEstado.isEmpty()) {
         Notification.show("Por favor, completa todos los campos del formulario.");
         return; // Detiene la ejecución si falta algún dato
     }
 
     try {
-        // 2. Convertir valores numéricos
+        
         int anio = Integer.parseInt(txtAnio.getValue());
-        int calificacion = Integer.parseInt(txtCalificacion.getValue());
+        int calificacion = ratingCalificacion.valor;
 
-        // 3. Validar rango de calificación (1 a 5)
+        
         if (calificacion < 1 || calificacion > 5) {
             Notification.show("La calificación debe ser un número entre 1 y 5.");
             return;
         }
 
-        // 4. Validar rango de año lógico
+        
         if (anio < 1800 || anio > 2026) {
             Notification.show("Por favor, ingresa un año válido.");
             return;
@@ -89,7 +102,7 @@ public class MainView extends VerticalLayout {
         txtGenero.clear();
         txtAnio.clear();
         txtCreador.clear();
-        txtCalificacion.clear();
+        ratingCalificacion.limpiar();
         txtEstado.clear();
 
         dialogFormulario.close();
@@ -97,18 +110,18 @@ public class MainView extends VerticalLayout {
     } catch (NumberFormatException ex) {
         Notification.show("Error: 'Año' y 'Calificación' deben ser números enteros.");
     }
-});
+     });
         btnGuardar.addThemeVariants(ButtonVariant.LUMO_PRIMARY);
 
         Button btnCancelar = new Button("Cancelar", e -> dialogFormulario.close());
 
-        // 4. Meter los campos y botones adentro del Dialog
+        // Meter los campos y botones adentro del Dialog
             FormLayout formulario = new FormLayout();
-            formulario.add(txtTitulo, cbTipo, txtGenero, txtAnio, txtCreador, txtCalificacion, txtEstado);
+            formulario.add(txtTitulo, cbTipo, txtGenero, txtAnio, txtCreador, campoCalificacion, txtEstado);
         dialogFormulario.add(formulario);
         dialogFormulario.getFooter().add(btnCancelar, btnGuardar);
 
-        // 5. Crear la barra principal de la vista
+        // Crear la barra principal de la vista
         H2 titulo = new H2("Mi Colección");
         Button btnNuevo = new Button("+ Nuevo Elemento", e -> dialogFormulario.open());
         btnNuevo.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_SUCCESS);
@@ -118,7 +131,6 @@ public class MainView extends VerticalLayout {
         barraSuperior.setJustifyContentMode(JustifyContentMode.BETWEEN);
         barraSuperior.setAlignItems(Alignment.CENTER);
 
-        // 6. Agregar solo la barra a la pantalla principal
         add(barraSuperior);
     }
 }
