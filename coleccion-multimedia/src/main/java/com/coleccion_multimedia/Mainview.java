@@ -5,13 +5,12 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
 
-@Route("")
+@Route(value = "", layout = MainLayout.class)
 @PageTitle("Akatsuki Media")
-
-public class Mainview extends VerticalLayout {
-    public Mainview() {
-        //permite editar esta vista con css despues
+public class MainView extends VerticalLayout {
+    public MainView() {
+        // Permite editar esta vista con CSS después
         setClassName("main-view");
-     }
-
+        
+    }
 }
