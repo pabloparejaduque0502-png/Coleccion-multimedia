@@ -22,7 +22,7 @@ public class MainLayout extends AppLayout {
         searchField.setWidth("600px");
 
         //enlaces que llevaran a las otras vistas
-        RouterLink linkHome = new RouterLink("Catálogo", MainView.class);
+        RouterLink linkHome = new RouterLink("Mi colección", MainView.class);
         RouterLink linkPrestamos = new RouterLink("Préstamos", PrestamosView.class);
         RouterLink linkListas = new RouterLink("Listas", ListasView.class);
         RouterLink linkEstadisticas = new RouterLink("Estadísticas", EstadisticasView.class);

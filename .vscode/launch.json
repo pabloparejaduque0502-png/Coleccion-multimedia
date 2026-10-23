@@ -1,0 +1,14 @@
+{
+  "configurations": [
+    {
+      "type": "java",
+      "name": "Spring Boot-ColeccionMultimediaApplication<coleccion-multimedia>",
+      "request": "launch",
+      "cwd": "${workspaceFolder}",
+      "mainClass": "com.coleccion_multimedia.ColeccionMultimediaApplication",
+      "projectName": "coleccion-multimedia",
+      "args": "",
+      "envFile": "${workspaceFolder}/.env"
+    }
+  ]
+}
