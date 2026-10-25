@@ -9,8 +9,9 @@ public class ElementoMultimedia {
     public String creador;    
     public int calificacion;
     public String estado;
+    public String imagen;
 
-    public ElementoMultimedia(String id, String titulo, TipoMultimedia tipo, String genero, int anio, String creador, int calificacion, String estado) {
+    public ElementoMultimedia(String id, String titulo, TipoMultimedia tipo, String genero, int anio, String creador, int calificacion, String estado,String imagen) {
         this.id = id;
         this.titulo = titulo;
         this.tipo = tipo;
@@ -19,5 +20,6 @@ public class ElementoMultimedia {
         this.creador = creador;
         this.calificacion = calificacion;
         this.estado = estado;
+        this.imagen = imagen;
     }
 }

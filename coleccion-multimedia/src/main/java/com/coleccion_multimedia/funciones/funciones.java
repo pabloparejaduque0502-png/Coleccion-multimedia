@@ -24,7 +24,8 @@ public class funciones {
                          elemento.anio + "|" + 
                          elemento.creador + "|" + 
                          elemento.calificacion + "|" + 
-                         elemento.estado);
+                         elemento.estado + "|" + 
+                         elemento.imagen);
             writer.newLine();
         } catch (IOException e) {
             System.out.println("Error al guardar en el archivo: " + e.getMessage());
@@ -75,8 +76,9 @@ public class funciones {
                     String creador = partes[5];
                     int calificacion = Integer.parseInt(partes[6]);
                     String estado = partes[7];
+                    String imagen = partes[8];
 
-                    ElementoMultimedia elemento = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado);
+                    ElementoMultimedia elemento = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado,imagen);
                     elementos[indice] = elemento;
                     indice++;
                 }
