@@ -8,10 +8,10 @@ public class ElementoMultimedia {
     public int anio;          
     public String creador;    
     public int calificacion;
-    public String estado;
+    public EstadoMultimedia estado;
     public String imagen;
 
-    public ElementoMultimedia(String id, String titulo, TipoMultimedia tipo, String genero, int anio, String creador, int calificacion, String estado,String imagen) {
+    public ElementoMultimedia(String id, String titulo, TipoMultimedia tipo, String genero, int anio, String creador, int calificacion, EstadoMultimedia estado, String imagen) {
         this.id = id;
         this.titulo = titulo;
         this.tipo = tipo;

@@ -2,6 +2,7 @@ package com.coleccion_multimedia;
 
 import com.coleccion_multimedia.clases.ElementoMultimedia;
 import com.coleccion_multimedia.clases.TipoMultimedia;
+import com.coleccion_multimedia.clases.EstadoMultimedia;
 import com.coleccion_multimedia.funciones.funciones;
 import com.coleccion_multimedia.icon.Estrellas;
 import com.vaadin.flow.component.button.Button;
@@ -10,6 +11,7 @@ import com.vaadin.flow.component.combobox.ComboBox;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -69,7 +71,8 @@ public class MainView extends VerticalLayout {
         campoCalificacion.setPadding(false);
         campoCalificacion.setSpacing(false);
         
-        TextField txtEstado = new TextField("Estado");
+        ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
+        cbEstado.setItems(EstadoMultimedia.values());
 
         // Arreglos tradicionales de 1 posición para guardar temporalmente la imagen subida
         final String[] nombreArchivoSubido = new String[]{ "default.png" };
@@ -94,7 +97,7 @@ public class MainView extends VerticalLayout {
 
             // Validaciones al presionar el botón guardar
             if (txtTitulo.isEmpty() || cbTipo.getValue() == null || txtGenero.isEmpty() || 
-                txtAnio.isEmpty() || txtCreador.isEmpty() || ratingCalificacion.valor == 0 || txtEstado.isEmpty()) {
+                txtAnio.isEmpty() || txtCreador.isEmpty() || ratingCalificacion.valor == 0 || cbEstado.getValue() == null) {
                 Notification.show("Por favor, completa todos los campos del formulario.");
                 return; // Detiene la ejecución si falta algún dato
             }
@@ -144,7 +147,7 @@ public class MainView extends VerticalLayout {
                 anio,
                 txtCreador.getValue(),
                 calificacion,
-                txtEstado.getValue(),
+                cbEstado.getValue(),
                 nombreImagenFinal
             );
 
@@ -161,7 +164,7 @@ public class MainView extends VerticalLayout {
             txtAnio.clear();
             txtCreador.clear();
             ratingCalificacion.limpiar();
-            txtEstado.clear();
+            cbEstado.clear();
             uploadPortada.clearFileList();
             
             // Reiniciar las variables temporales de la imagen
@@ -176,7 +179,7 @@ public class MainView extends VerticalLayout {
 
         // Meter los campos y botones adentro del Dialog
         FormLayout formulario = new FormLayout();
-        formulario.add(txtTitulo, cbTipo, txtGenero, txtAnio, txtCreador, campoCalificacion, txtEstado, uploadPortada);
+        formulario.add(txtTitulo, cbTipo, txtGenero, txtAnio, txtCreador, campoCalificacion, cbEstado, uploadPortada);
         formulario.setColspan(uploadPortada, 2);
 
         dialogFormulario.add(formulario);
@@ -197,7 +200,7 @@ public class MainView extends VerticalLayout {
         cargarTarjetas();
     }
 
-    // --- NUEVO: Método para leer los registros y construir los recuadros usando DownloadHandler de Vaadin 25 ---
+    
 // Método para leer los registros y construir los recuadros usando DownloadHandler de Vaadin 25
     public void cargarTarjetas() {
         // 1. Limpia el contenido previo para evitar duplicar recuadros al refrescar
@@ -226,6 +229,7 @@ public class MainView extends VerticalLayout {
             tarjeta.getStyle().set("border-radius", "12px");
             tarjeta.getStyle().set("background-color", "var(--lumo-base-color)");
             tarjeta.getStyle().set("box-shadow", "0 4px 6px rgba(0, 0, 0, 0.05)");
+            tarjeta.getStyle().set("cursor", "pointer");
 
             // 5. Verificar si la imagen física existe en el disco duro o conmutar a la imagen por defecto
             File archivo = new File("portadas", e.imagen);
@@ -257,7 +261,90 @@ public class MainView extends VerticalLayout {
 
             // 10. Empaquetar todo en la tarjeta y agregarla a la cuadrícula principal
             tarjeta.add(imgPortada, lblTitulo, lblSubtitulo, estrellasLectura);
+           tarjeta.addClickListener(event -> abrirFichaDetalles(e));
+
             contenedorTarjetas.add(tarjeta);
         }
     }
- }
+
+    // --- NUEVO: Método que despliega la Ficha de Detalles en una ventana emergente (Dialog) ---
+    public void abrirFichaDetalles(ElementoMultimedia e) {
+        Dialog dialogDetalles = new Dialog();
+        dialogDetalles.setHeaderTitle(e.titulo);
+        dialogDetalles.setWidth("450px");
+
+        // 1. Preparar la imagen de portada en tamaño grande
+        File archivo = new File("portadas", e.imagen);
+        if (!archivo.exists()) {
+            archivo = new File("portadas", "default.png");
+        }
+
+        DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
+        Image imgGrande = new Image(handlerImagen, e.titulo);
+        imgGrande.setWidth("100%");
+        imgGrande.setMaxHeight("300px");
+        imgGrande.getStyle().set("object-fit", "cover");
+        imgGrande.getStyle().set("border-radius", "8px");
+
+        // 2. Componentes de texto con la información detallada del elemento
+
+        Span lblDetalles = new Span("Tipo: " + e.tipo + "  |  Género: " + e.genero);
+        Span lblCreadorAnio = new Span("Creador: " + e.creador + "  |  Año: " + e.anio);
+        Span lblEstado = new Span("Estado actual: " + e.estado);
+        lblEstado.getStyle().set("font-weight", "bold");
+
+        Estrellas estrellasDetalle = new Estrellas(e.calificacion, false);
+
+        VerticalLayout layoutContenido = new VerticalLayout(
+            imgGrande,  lblDetalles, lblCreadorAnio, lblEstado, estrellasDetalle
+        );
+        layoutContenido.setPadding(false);
+        layoutContenido.setSpacing(true);
+
+        // 3. Botón de Eliminación de Registro
+        Button btnEliminar = new Button("Eliminar", eventDel -> {
+            
+            // Requisito Bonus: Si la portada NO es default.png, borra la imagen física del disco duro
+            Dialog dialogConfirmacion = new Dialog();
+            dialogConfirmacion.setHeaderTitle("¿Eliminar elemento?");
+
+            Span msgConfirmacion = new Span("¿Estás seguro de que deseas eliminar '" + e.titulo + "'? Esta acción no se puede deshacer.");
+
+            Button btnConfirmarEliminar = new Button("Sí, eliminar", eventSi -> {
+                // 1. Borrar la imagen física en portadas/ si no es la por defecto
+                if (!e.imagen.equals("default.png")) {
+                    File fotoFisica = new File("portadas", e.imagen);
+                    if (fotoFisica.exists()) {
+                        fotoFisica.delete();
+                    }
+                }
+
+                // 2. Eliminar el registro del archivo elementos.txt
+                funciones.eliminarElemento(e.id);
+                Notification.show("Elemento eliminado de tu colección.");
+
+                // 3. Refrescar la pantalla y cerrar ambas ventanas
+                cargarTarjetas();
+                dialogConfirmacion.close();
+                dialogDetalles.close();
+            });
+            btnConfirmarEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+            Button btnCancelarConf = new Button("Cancelar", eventNo -> dialogConfirmacion.close());
+
+            dialogConfirmacion.add(msgConfirmacion);
+            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmarEliminar);
+            
+            dialogConfirmacion.open();
+        });
+        btnEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+        Button btnCerrar = new Button("Cerrar", eventClose -> dialogDetalles.close());
+
+        dialogDetalles.add(layoutContenido);
+        dialogDetalles.getFooter().add(btnCerrar, btnEliminar);
+
+        dialogDetalles.open();
+    }
+}
+ 

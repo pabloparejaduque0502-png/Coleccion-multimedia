@@ -1,6 +1,7 @@
 package com.coleccion_multimedia.funciones;
 
 import com.coleccion_multimedia.clases.ElementoMultimedia;
+import com.coleccion_multimedia.clases.EstadoMultimedia;
 import com.coleccion_multimedia.clases.TipoMultimedia;
 
 import java.io.BufferedReader;
@@ -75,7 +76,7 @@ public class funciones {
                     int anio = Integer.parseInt(partes[4]);
                     String creador = partes[5];
                     int calificacion = Integer.parseInt(partes[6]);
-                    String estado = partes[7];
+                    EstadoMultimedia estado = EstadoMultimedia.valueOf(partes[7]);
                     String imagen = partes[8];
 
                     ElementoMultimedia elemento = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado,imagen);
@@ -88,5 +89,31 @@ public class funciones {
         }
 
         return elementos;
+    }
+    public static void eliminarElemento(String id) {
+        ElementoMultimedia[] elementos = leerElementos();
+
+        // Sobrescribimos el archivo plano desde cero (FileWriter con false)
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(RUTA_ARCHIVO, false))) {
+            for (int i = 0; i < elementos.length; i++) {
+                ElementoMultimedia e = elementos[i];
+                
+                // Si el elemento es válido y su ID NO coincide con el que queremos borrar, lo volvemos a escribir
+                if (e != null && !e.id.equals(id)) {
+                    writer.write(e.id + "|" + 
+                                 e.titulo + "|" + 
+                                 e.tipo + "|" + 
+                                 e.genero + "|" + 
+                                 e.anio + "|" + 
+                                 e.creador + "|" + 
+                                 e.calificacion + "|" + 
+                                 e.estado + "|" + 
+                                 e.imagen);
+                    writer.newLine();
+                }
+            }
+        } catch (IOException ex) {
+            System.out.println("Error al eliminar el elemento: " + ex.getMessage());
+        }
     }
  }
