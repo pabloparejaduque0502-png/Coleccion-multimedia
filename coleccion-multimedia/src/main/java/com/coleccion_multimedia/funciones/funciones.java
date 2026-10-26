@@ -67,7 +67,7 @@ public class funciones {
             while ((linea = reader.readLine()) != null) {
                 String[] partes = linea.split("\\|");
 
-                if (partes.length == 8) {
+                if (partes.length == 9) {
                     String id = partes[0];
                     String titulo = partes[1];
                     TipoMultimedia tipo = TipoMultimedia.valueOf(partes[2]);

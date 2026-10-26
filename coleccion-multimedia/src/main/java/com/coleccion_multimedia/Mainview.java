@@ -19,18 +19,31 @@ import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 
-// --- NUEVO: API de carga de archivos actualizada para Vaadin 25 ---
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.server.streams.UploadHandler;
 import java.io.File;
 import java.io.FileOutputStream;
 
+// --- NUEVO: Importaciones actualizadas para Vaadin 25 (DownloadHandler, FlexLayout, H4, Image) ---
+import com.vaadin.flow.component.html.H4;
+import com.vaadin.flow.component.html.Image;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
+import com.vaadin.flow.server.streams.DownloadHandler;
+
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Akatsuki Media - Mi Colección")
 public class MainView extends VerticalLayout {
 
+    // --- NUEVO: Contenedor flexible para organizar los recuadros de la colección en cuadrícula ---
+    public FlexLayout contenedorTarjetas = new FlexLayout();
+
     public MainView() {
         setClassName("main-view");
+
+        // --- NUEVO: Configuración de la rejilla de tarjetas (Flexbox) ---
+        contenedorTarjetas.setWidthFull();
+        contenedorTarjetas.getStyle().set("flex-wrap", "wrap"); // Salta de línea automáticamente al llenar el ancho
+        contenedorTarjetas.getStyle().set("gap", "20px");       // Espaciado de 20px entre cada tarjeta
 
         // Crear el botón para agregar nuevos elementos
         Dialog dialogFormulario = new Dialog();
@@ -58,11 +71,11 @@ public class MainView extends VerticalLayout {
         
         TextField txtEstado = new TextField("Estado");
 
-        // --- NUEVO: Arreglos tradicionales de 1 posición para guardar temporalmente la imagen subida ---
+        // Arreglos tradicionales de 1 posición para guardar temporalmente la imagen subida
         final String[] nombreArchivoSubido = new String[]{ "default.png" };
         final byte[][] bytesImagenSubida = new byte[1][];
 
-        // --- NUEVO: UploadHandler de Vaadin 25 (Reemplaza a MemoryBuffer) ---
+        // UploadHandler de Vaadin 25 (Reemplaza a MemoryBuffer)
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
             nombreArchivoSubido[0] = metadata.fileName();
             bytesImagenSubida[0] = data;
@@ -70,7 +83,7 @@ public class MainView extends VerticalLayout {
 
         Upload uploadPortada = new Upload(handlerImagen);
         
-        // --- NUEVO: API de filtrado actualizada en Vaadin 25.2 (usa extensiones exactas) ---
+        // API de filtrado actualizada en Vaadin 25.2 (usa extensiones exactas)
         String[] extensionesPermitidas = new String[]{ ".jpg", ".jpeg", ".png" };
         uploadPortada.setAcceptedFileExtensions(extensionesPermitidas);
         uploadPortada.setMaxFileSize(2 * 1024 * 1024); // Máximo 2 MB
@@ -94,7 +107,7 @@ public class MainView extends VerticalLayout {
                 return;
             }
 
-            // --- NUEVO: Escritura física del archivo de portada en el disco duro ---
+            // Escritura física del archivo de portada en el disco duro
             String nombreImagenFinal = "default.png";
 
             if (bytesImagenSubida[0] != null && bytesImagenSubida[0].length > 0) {
@@ -138,6 +151,9 @@ public class MainView extends VerticalLayout {
             funciones.guardarElemento(nuevo);
             Notification.show("¡Elemento guardado en el archivo!");
 
+            // --- NUEVO: Refrescar la cuadrícula de tarjetas en pantalla al guardar ---
+            cargarTarjetas();
+
             // Limpiar campos y cerrar diálogo
             txtTitulo.clear();
             cbTipo.clear();
@@ -176,6 +192,72 @@ public class MainView extends VerticalLayout {
         barraSuperior.setJustifyContentMode(JustifyContentMode.BETWEEN);
         barraSuperior.setAlignItems(Alignment.CENTER);
 
-        add(barraSuperior);
+        // --- NUEVO: Agregar la rejilla de tarjetas a la vista y llamar la carga inicial ---
+        add(barraSuperior, contenedorTarjetas);
+        cargarTarjetas();
     }
-}
+
+    // --- NUEVO: Método para leer los registros y construir los recuadros usando DownloadHandler de Vaadin 25 ---
+// Método para leer los registros y construir los recuadros usando DownloadHandler de Vaadin 25
+    public void cargarTarjetas() {
+        // 1. Limpia el contenido previo para evitar duplicar recuadros al refrescar
+        contenedorTarjetas.removeAll();
+
+        // 2. Lee el arreglo tradicional de objetos desde el archivo plano mediante funciones
+        ElementoMultimedia[] elementos = funciones.leerElementos();
+
+        // 3. Ciclo for tradicional sobre el arreglo de elementos
+        for (int i = 0; i < elementos.length; i++) {
+            ElementoMultimedia e = elementos[i];
+
+            // --- NUEVO: Protección anti-null para ignorar registros corruptos o vacíos ---
+            if (e == null) {
+                continue; // Salta esta iteración de forma segura y evita el NullPointerException
+            }
+
+            // 4. Crear el contenedor individual de la tarjeta (recuadro vertical)
+            VerticalLayout tarjeta = new VerticalLayout();
+            tarjeta.setWidth("200px");
+            tarjeta.setPadding(true);
+            tarjeta.setSpacing(true);
+
+            // Estilos CSS para el aspecto visual (borde, sombra y esquinas redondeadas)
+            tarjeta.getStyle().set("border", "1px solid var(--lumo-contrast-10pct)");
+            tarjeta.getStyle().set("border-radius", "12px");
+            tarjeta.getStyle().set("background-color", "var(--lumo-base-color)");
+            tarjeta.getStyle().set("box-shadow", "0 4px 6px rgba(0, 0, 0, 0.05)");
+
+            // 5. Verificar si la imagen física existe en el disco duro o conmutar a la imagen por defecto
+            File archivo = new File("portadas", e.imagen);
+            if (!archivo.exists()) {
+                archivo = new File("portadas", "default.png");
+            }
+
+            // 6. API Moderna de Vaadin 25: Crear el gestor de descarga para archivos locales
+            DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
+
+            // 7. Constructor moderno de Vaadin 25: Image(DownloadHandler, String)
+            Image imgPortada = new Image(handlerImagen, e.titulo);
+            imgPortada.setWidth("100%");
+            imgPortada.setHeight("200px");
+            imgPortada.getStyle().set("object-fit", "cover"); // Escala la foto proporcionalmente sin deformarla
+            imgPortada.getStyle().set("border-radius", "8px");
+
+            // 8. Textos descriptivos de la tarjeta
+            H4 lblTitulo = new H4(e.titulo);
+            lblTitulo.getStyle().set("margin", "0");
+            lblTitulo.getStyle().set("font-size", "1rem");
+
+            Span lblSubtitulo = new Span(e.creador + " • " + e.anio);
+            lblSubtitulo.getStyle().set("font-size", "0.85rem");
+            lblSubtitulo.getStyle().set("color", "var(--lumo-secondary-text-color)");
+
+            // 9. Componente de Estrellas en modo solo lectura (esEditable = false)
+            Estrellas estrellasLectura = new Estrellas(e.calificacion, false);
+
+            // 10. Empaquetar todo en la tarjeta y agregarla a la cuadrícula principal
+            tarjeta.add(imgPortada, lblTitulo, lblSubtitulo, estrellasLectura);
+            contenedorTarjetas.add(tarjeta);
+        }
+    }
+ }
