@@ -1,49 +1,51 @@
 package com.coleccion_multimedia;
 
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 
 public class MainLayout extends AppLayout {
-    //en este archivo se define la barra superior que se mantiene en todas las vistas de la aplicacion para no tener
-    //que repetir el mismo codigo en todas las vistas
+
     public MainLayout() {
-        //logo y nombre de la aplicacion
+        // Tema oscuro nativo global de Vaadin Lumo
+        UI.getCurrent().getElement().setAttribute("theme", "dark");
+        getElement().getStyle().set("background-color", "#000000");
+
         H1 logo = new H1("☁️ Akatsuki Media");
         logo.addClassNames(LumoUtility.FontSize.LARGE, LumoUtility.Margin.MEDIUM);
+        logo.getStyle().set("color", "#ffffff");
 
-        // Buscador
-        TextField searchField = new TextField();
-        searchField.setPlaceholder("Buscar película, serie...");
-        searchField.setClearButtonVisible(true);
-        searchField.setWidth("600px");
-
-        //enlaces que llevaran a las otras vistas
-        RouterLink linkHome = new RouterLink("Mi colección", MainView.class);
-        RouterLink linkPrestamos = new RouterLink("Préstamos", PrestamosView.class);
-        RouterLink linkListas = new RouterLink("Listas", ListasView.class);
-        RouterLink linkEstadisticas = new RouterLink("Estadísticas", EstadisticasView.class);
+        RouterLink linkHome = crearEnlaceNavegacion("Mi colección", MainView.class);
+        RouterLink linkPrestamos = crearEnlaceNavegacion("Préstamos", PrestamosView.class);
+        RouterLink linkListas = crearEnlaceNavegacion("Listas", ListasView.class);
+        RouterLink linkEstadisticas = crearEnlaceNavegacion("Estadísticas", EstadisticasView.class);
 
         HorizontalLayout navLinks = new HorizontalLayout(linkHome, linkPrestamos, linkListas, linkEstadisticas);
         navLinks.setAlignItems(HorizontalLayout.Alignment.CENTER);
         navLinks.setSpacing(true);
 
-
-
-        // contenedor completo de todo lo que se vera en la baarra superior
-        HorizontalLayout header = new HorizontalLayout(logo, searchField, navLinks);
+        HorizontalLayout header = new HorizontalLayout(logo, navLinks);
         header.setWidthFull();
         header.setAlignItems(HorizontalLayout.Alignment.CENTER);
-        //reparte los espacios entre los elementos de la baarra superior
         header.setJustifyContentMode(HorizontalLayout.JustifyContentMode.BETWEEN);
-        //le da estetica con un margen a los extremos de la barra y una sombra sutil debajo de laa barra que hace que parezca flotando
-        header.addClassNames(LumoUtility.Padding.Horizontal.MEDIUM, LumoUtility.BoxShadow.SMALL);
+        
+        header.getStyle().set("background-color", "#121212");
+        header.getStyle().set("border-bottom", "1px solid #2a2a2a");
+        header.addClassNames(LumoUtility.Padding.Horizontal.MEDIUM);
 
-        //fija permanentemente la barra en la parte superior de la aplicación web
         addToNavbar(header);
+    }
 
+    private RouterLink crearEnlaceNavegacion(String texto, Class<? extends com.vaadin.flow.component.Component> vista) {
+        RouterLink link = new RouterLink(texto, vista);
+        link.getStyle().set("color", "#e0e0e0");
+        link.getStyle().set("text-decoration", "none");
+        link.getStyle().set("font-weight", "500");
+        link.getStyle().set("padding", "8px 14px");
+        link.getStyle().set("border-radius", "6px");
+        return link;
     }
 }
