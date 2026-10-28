@@ -2,41 +2,25 @@ package com.coleccion_multimedia.funciones;
 
 import com.coleccion_multimedia.clases.ElementoMultimedia;
 import com.coleccion_multimedia.clases.EstadoMultimedia;
+import com.coleccion_multimedia.clases.Prestamo;
 import com.coleccion_multimedia.clases.TipoMultimedia;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
+import java.io.PrintWriter;
 
 public class funciones {
 
-    private static final String RUTA_ARCHIVO = "elementos.txt";
+    private static final String RUTA_ELEMENTOS = "elementos.txt";
+    private static final String RUTA_PRESTAMOS = "prestamos.txt";
 
-    // Función para guardar un elemento en el archivo de texto cuando el usuario lo cree
-    public static void guardarElemento(ElementoMultimedia elemento) {
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(RUTA_ARCHIVO, true))) {
-            writer.write(elemento.id + "|" + 
-                         elemento.titulo + "|" + 
-                         elemento.tipo + "|" + 
-                         elemento.genero + "|" + 
-                         elemento.anio + "|" + 
-                         elemento.creador + "|" + 
-                         elemento.calificacion + "|" + 
-                         elemento.estado + "|" + 
-                         elemento.imagen);
-            writer.newLine();
-        } catch (IOException e) {
-            System.out.println("Error al guardar en el archivo: " + e.getMessage());
-        }
-    }
-
-    // Función para contar las lineas del archivo de texto y conocer el tamaño del vector
-    private static int contarLineas() {
+    // Método auxiliar genérico para contar líneas de cualquier archivo plano
+    private static int contarLineas(String ruta) {
         int contador = 0;
-        File archivo = new File(RUTA_ARCHIVO);
+        File archivo = new File(ruta);
         if (!archivo.exists()) {
             return 0;
         }
@@ -45,27 +29,42 @@ public class funciones {
                 contador++;
             }
         } catch (IOException e) {
-            System.out.println("Error al contar las líneas: " + e.getMessage());
+            System.out.println("Error al contar las líneas en " + ruta + ": " + e.getMessage());
         }
         return contador;
     }
 
-    // Función para leer los elementos del archivo de texto y crear un vector con ellos para que carguen en la pagina
-    // esta funcion vuelve y crea los elementos multimedia del usuario cada vez que se inicie la paagina, de este modo se tiene la persistencia
-    public static ElementoMultimedia[] leerElementos() {
-        int totalLineas = contarLineas();
-        ElementoMultimedia[] elementos = new ElementoMultimedia[totalLineas];
+    public static void guardarElemento(ElementoMultimedia elemento) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_ELEMENTOS, true))) {
+            writer.println(elemento.id + "|" + 
+                           elemento.titulo + "|" + 
+                           elemento.tipo + "|" + 
+                           elemento.genero + "|" + 
+                           elemento.anio + "|" + 
+                           elemento.creador + "|" + 
+                           elemento.calificacion + "|" + 
+                           elemento.estado + "|" + 
+                           elemento.imagen);
+        } catch (IOException e) {
+            System.out.println("Error al guardar el elemento: " + e.getMessage());
+        }
+    }
 
+    public static ElementoMultimedia[] leerElementos() {
+        int totalLineas = contarLineas(RUTA_ELEMENTOS);
         if (totalLineas == 0) {
-            return elementos;
+            return new ElementoMultimedia[0];
         }
 
-        File archivo = new File(RUTA_ARCHIVO);
+        ElementoMultimedia[] elementosTemp = new ElementoMultimedia[totalLineas];
+        int indice = 0;
+
+        File archivo = new File(RUTA_ELEMENTOS);
         try (BufferedReader reader = new BufferedReader(new FileReader(archivo))) {
             String linea;
-            int indice = 0;
-            
             while ((linea = reader.readLine()) != null) {
+                if (linea.trim().isEmpty()) continue;
+
                 String[] partes = linea.split("\\|");
 
                 if (partes.length == 9) {
@@ -79,41 +78,137 @@ public class funciones {
                     EstadoMultimedia estado = EstadoMultimedia.valueOf(partes[7]);
                     String imagen = partes[8];
 
-                    ElementoMultimedia elemento = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado,imagen);
-                    elementos[indice] = elemento;
+                    elementosTemp[indice] = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado, imagen);
                     indice++;
                 }
             }
         } catch (IOException e) {
-            System.out.println("Error al leer el archivo: " + e.getMessage());
+            System.out.println("Error al leer el archivo de elementos: " + e.getMessage());
         }
 
-        return elementos;
+        // Ajuste exacto del tamaño del arreglo tradicional
+        if (indice < totalLineas) {
+            ElementoMultimedia[] resultado = new ElementoMultimedia[indice];
+            for (int i = 0; i < indice; i++) {
+                resultado[i] = elementosTemp[i];
+            }
+            return resultado;
+        }
+
+        return elementosTemp;
     }
+
     public static void eliminarElemento(String id) {
         ElementoMultimedia[] elementos = leerElementos();
 
-        // Sobrescribimos el archivo plano desde cero (FileWriter con false)
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(RUTA_ARCHIVO, false))) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_ELEMENTOS, false))) {
             for (int i = 0; i < elementos.length; i++) {
                 ElementoMultimedia e = elementos[i];
                 
-                // Si el elemento es válido y su ID NO coincide con el que queremos borrar, lo volvemos a escribir
                 if (e != null && !e.id.equals(id)) {
-                    writer.write(e.id + "|" + 
-                                 e.titulo + "|" + 
-                                 e.tipo + "|" + 
-                                 e.genero + "|" + 
-                                 e.anio + "|" + 
-                                 e.creador + "|" + 
-                                 e.calificacion + "|" + 
-                                 e.estado + "|" + 
-                                 e.imagen);
-                    writer.newLine();
+                    writer.println(e.id + "|" + 
+                                   e.titulo + "|" + 
+                                   e.tipo + "|" + 
+                                   e.genero + "|" + 
+                                   e.anio + "|" + 
+                                   e.creador + "|" + 
+                                   e.calificacion + "|" + 
+                                   e.estado + "|" + 
+                                   e.imagen);
                 }
             }
         } catch (IOException ex) {
             System.out.println("Error al eliminar el elemento: " + ex.getMessage());
         }
     }
- }
+
+    public static ElementoMultimedia buscarElementoPorId(String id) {
+        ElementoMultimedia[] elementos = leerElementos();
+        for (int i = 0; i < elementos.length; i++) {
+            if (elementos[i] != null && elementos[i].id.equals(id)) {
+                return elementos[i];
+            }
+        }
+        return null;
+    }
+
+    public static void guardarPrestamo(Prestamo prestamo) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_PRESTAMOS, true))) {
+            String fechaDev = (prestamo.fechaDevolucion == null || prestamo.fechaDevolucion.trim().isEmpty()) 
+                              ? "Sin fecha" 
+                              : prestamo.fechaDevolucion;
+
+            writer.println(prestamo.id + "|" + 
+                           prestamo.idElemento + "|" + 
+                           prestamo.persona + "|" + 
+                           prestamo.fechaPrestamo + "|" + 
+                           fechaDev);
+        } catch (IOException e) {
+            System.out.println("Error al guardar el préstamo: " + e.getMessage());
+        }
+    }
+
+    public static Prestamo[] leerPrestamos() {
+        int totalLineas = contarLineas(RUTA_PRESTAMOS);
+        if (totalLineas == 0) {
+            return new Prestamo[0];
+        }
+
+        Prestamo[] prestamosTemp = new Prestamo[totalLineas];
+        int indice = 0;
+
+        File archivo = new File(RUTA_PRESTAMOS);
+        try (BufferedReader reader = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                if (linea.trim().isEmpty()) continue;
+
+                String[] partes = linea.split("\\|");
+
+                if (partes.length >= 4) {
+                    String id = partes[0];
+                    String idElemento = partes[1];
+                    String persona = partes[2];
+                    String fechaPrestamo = partes[3];
+                    String fechaDevolucion = (partes.length > 4) ? partes[4] : "Sin fecha";
+
+                    prestamosTemp[indice] = new Prestamo(id, idElemento, persona, fechaPrestamo, fechaDevolucion);
+                    indice++;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error al leer el archivo de préstamos: " + e.getMessage());
+        }
+
+        // Ajuste exacto del tamaño del arreglo
+        if (indice < totalLineas) {
+            Prestamo[] resultado = new Prestamo[indice];
+            for (int i = 0; i < indice; i++) {
+                resultado[i] = prestamosTemp[i];
+            }
+            return resultado;
+        }
+
+        return prestamosTemp;
+    }
+
+    public static void eliminarPrestamo(String id) {
+        Prestamo[] prestamos = leerPrestamos();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_PRESTAMOS, false))) {
+            for (int i = 0; i < prestamos.length; i++) {
+                Prestamo p = prestamos[i];
+
+                if (p != null && !p.id.equals(id)) {
+                    writer.println(p.id + "|" + 
+                                   p.idElemento + "|" + 
+                                   p.persona + "|" + 
+                                   p.fechaPrestamo + "|" + 
+                                   p.fechaDevolucion);
+                }
+            }
+        } catch (IOException ex) {
+            System.out.println("Error al eliminar el préstamo: " + ex.getMessage());
+        }
+    }
+}

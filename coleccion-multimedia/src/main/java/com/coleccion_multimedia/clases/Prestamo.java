@@ -1,18 +1,17 @@
 package com.coleccion_multimedia.clases;
 
 public class Prestamo {
-    public String idPrestamo;
+    public String id;
     public String idElemento;
-    public String personaDestino;
+    public String persona;
     public String fechaPrestamo;
-    public boolean devuelto;
+    public String fechaDevolucion;
 
-    
-    public Prestamo(String idPrestamo, String idElemento, String personaDestino, String fechaPrestamo, boolean devuelto) {
-        this.idPrestamo = idPrestamo;
+    public Prestamo(String id, String idElemento, String persona, String fechaPrestamo, String fechaDevolucion) {
+        this.id = id;
         this.idElemento = idElemento;
-        this.personaDestino = personaDestino;
+        this.persona = persona;
         this.fechaPrestamo = fechaPrestamo;
-        this.devuelto = devuelto; 
+        this.fechaDevolucion = (fechaDevolucion == null || fechaDevolucion.trim().isEmpty()) ? "Sin fecha" : fechaDevolucion;
     }
 }

@@ -252,7 +252,7 @@ public class MainView extends VerticalLayout {
 
     public VerticalLayout crearTarjeta(ElementoMultimedia e) {
         VerticalLayout tarjeta = new VerticalLayout();
-        tarjeta.setWidth("200px");
+        tarjeta.setWidth("240px");
         tarjeta.setPadding(true);
         tarjeta.setSpacing(true);
 
