@@ -3,10 +3,13 @@ package com.coleccion_multimedia;
 import com.coleccion_multimedia.clases.ElementoMultimedia;
 import com.coleccion_multimedia.clases.ListaPersonalizada;
 import com.coleccion_multimedia.clases.Prestamo;
+import com.coleccion_multimedia.clases.TipoMultimedia;
 import com.coleccion_multimedia.funciones.funciones;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
+import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.router.PageTitle;
@@ -37,7 +40,18 @@ public class EstadisticasView extends VerticalLayout {
         HorizontalLayout barraEst = crearBarraEst(elementos, prestamos, listas);
         add(barraEst);
 
-        // Los componentes visuales de KPIs, Tipos y Estados se irán acoplando aquí paso a paso
+      // 4. Contenedor flexible para los paneles de desglose
+        FlexLayout contenedorPaneles = new FlexLayout();
+        contenedorPaneles.setWidthFull();
+        contenedorPaneles.getStyle().set("flex-wrap", "wrap");
+        contenedorPaneles.getStyle().set("gap", "20px");
+        contenedorPaneles.getStyle().set("margin-top", "10px");
+
+        // Renderizado e inclusión del panel de tipos
+        VerticalLayout panelTipos = crearPanelPorTipo(elementos);
+        contenedorPaneles.add(panelTipos);
+
+        add(contenedorPaneles);
     }
        // --- SECCIÓN 1: MÉTRICAS GLOBALES (EST) ---
     private HorizontalLayout crearBarraEst(ElementoMultimedia[] elementos, Prestamo[] prestamos, ListaPersonalizada[] listas) {
@@ -66,7 +80,7 @@ public class EstadisticasView extends VerticalLayout {
         barra.add(
             crearTarjetaEst("Total Colección", String.valueOf(totalElementos), "#e50914"),
             crearTarjetaEst("Préstamos Activos", String.valueOf(totalPrestamos), "#ff4d4d"),
-            crearTarjetaEst("Listas Creadas", String.valueOf(totalListas), "#ffffff"),
+            crearTarjetaEst("Listas Creadas", String.valueOf(totalListas), "#ff4d4d"),
             crearTarjetaEst("Calificación Promedio", promedioTexto, "#ffb400")
         );
 
@@ -94,5 +108,82 @@ public class EstadisticasView extends VerticalLayout {
 
         tarjeta.add(lblTitulo, lblValor);
         return tarjeta;
+    }
+    // --- SECCIÓN 2: DESGLOSE POR TIPO DE MULTIMEDIA ---
+    private VerticalLayout crearPanelPorTipo(ElementoMultimedia[] elementos) {
+        VerticalLayout panel = new VerticalLayout();
+        panel.getStyle().set("background-color", "#181818");
+        panel.getStyle().set("border", "1px solid #2a2a2a");
+        panel.getStyle().set("border-radius", "12px");
+        panel.getStyle().set("flex", "1");
+        panel.getStyle().set("min-width", "300px");
+        panel.setPadding(true);
+        panel.setSpacing(true);
+
+        H4 tituloPanel = new H4("Distribución por Tipo");
+        tituloPanel.getStyle().set("color", "#ffffff");
+        tituloPanel.getStyle().set("margin", "0 0 10px 0");
+        panel.add(tituloPanel);
+
+        TipoMultimedia[] tipos = TipoMultimedia.values();
+
+        // Recorrido de los tipos del enum
+        for (int i = 0; i < tipos.length; i++) {
+            TipoMultimedia t = tipos[i];
+            int contador = 0;
+
+            // Conteo manual en el arreglo plano
+            for (int j = 0; j < elementos.length; j++) {
+                if (elementos[j] != null && elementos[j].tipo == t) {
+                    contador++;
+                }
+            }
+
+            panel.add(crearFilaConBarra(t.name(), contador, elementos.length, "#e50914"));
+        }
+
+        return panel;
+    }
+
+    // --- COMPONENTE AUXILIAR: BARRA DE PROGRESO EN CSS ---
+    private VerticalLayout crearFilaConBarra(String etiqueta, int cantidad, int totalGlobal, String colorBarra) {
+        VerticalLayout contenedorFila = new VerticalLayout();
+        contenedorFila.setPadding(false);
+        contenedorFila.setSpacing(false);
+        contenedorFila.setWidthFull();
+
+        double porcentaje = (totalGlobal > 0) ? ((double) cantidad / totalGlobal) * 100.0 : 0.0;
+
+        Span lblTexto = new Span(etiqueta + " (" + cantidad + ")");
+        lblTexto.getStyle().set("color", "#dddddd");
+        lblTexto.getStyle().set("font-size", "0.85rem");
+
+        Span lblPorcentaje = new Span(String.format("%.0f%%", porcentaje));
+        lblPorcentaje.getStyle().set("color", "#888888");
+        lblPorcentaje.getStyle().set("font-size", "0.85rem");
+
+        HorizontalLayout encabezadoFila = new HorizontalLayout(lblTexto, lblPorcentaje);
+        encabezadoFila.setWidthFull();
+        encabezadoFila.setJustifyContentMode(JustifyContentMode.BETWEEN);
+
+        // Contenedor base gris oscuro de la barra
+        FlexLayout barraFondo = new FlexLayout();
+        barraFondo.setWidthFull();
+        barraFondo.getStyle().set("height", "8px");
+        barraFondo.getStyle().set("background-color", "#2a2a2a");
+        barraFondo.getStyle().set("border-radius", "4px");
+        barraFondo.getStyle().set("margin-top", "4px");
+        barraFondo.getStyle().set("overflow", "hidden");
+
+        // Relleno de color proporcional al porcentaje
+        FlexLayout barraRelleno = new FlexLayout();
+        barraRelleno.setWidth(porcentaje + "%");
+        barraRelleno.getStyle().set("height", "100%");
+        barraRelleno.getStyle().set("background-color", colorBarra);
+
+        barraFondo.add(barraRelleno);
+        contenedorFila.add(encabezadoFila, barraFondo);
+
+        return contenedorFila;
     }
 }
