@@ -48,7 +48,8 @@ public class MainView extends VerticalLayout {
         contenedorTarjetas.getStyle().set("gap", "20px");
 
         txtBuscar.setPlaceholder("Buscar por título, género, creador o año...");
-        txtBuscar.setWidth("600px");
+        txtBuscar.setMaxWidth("600px");
+        txtBuscar.setWidthFull();
         txtBuscar.setClearButtonVisible(true);
         txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
         txtBuscar.addValueChangeListener(e -> cargarTarjetas(e.getValue()));
@@ -77,7 +78,7 @@ public class MainView extends VerticalLayout {
         ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
         cbEstado.setItems(EstadoMultimedia.values());
 
-        final String[] nombreArchivoSubido = new String[]{ "default.png" };
+        final String[] nombreArchivoSubido = new String[]{ "default_elemento.png" };
         final byte[][] bytesImagenSubida = new byte[1][];
 
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
@@ -108,7 +109,7 @@ public class MainView extends VerticalLayout {
                 return;
             }
 
-            String nombreImagenFinal = "default.png";
+            String nombreImagenFinal = "default_elemento.png";
 
             if (bytesImagenSubida[0] != null && bytesImagenSubida[0].length > 0) {
                 try {
@@ -158,7 +159,7 @@ public class MainView extends VerticalLayout {
             cbEstado.clear();
             uploadPortada.clearFileList();
             
-            nombreArchivoSubido[0] = "default.png";
+            nombreArchivoSubido[0] = "default_elemento.png";
             bytesImagenSubida[0] = null;
 
             dialogFormulario.close();
@@ -187,6 +188,7 @@ public class MainView extends VerticalLayout {
         barraSuperior.setWidthFull();
         barraSuperior.setJustifyContentMode(JustifyContentMode.BETWEEN);
         barraSuperior.setAlignItems(Alignment.CENTER);
+        barraSuperior.getStyle().set("flex-wrap", "wrap");
 
         add(barraSuperior, contenedorTarjetas);
         cargarTarjetas();
@@ -263,7 +265,7 @@ public class MainView extends VerticalLayout {
 
         File archivo = new File("portadas", e.imagen);
         if (!archivo.exists()) {
-            archivo = new File("portadas", "default.png");
+            archivo = new File("portadas", "default_elemento.png");
         }
 
         DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
@@ -311,7 +313,7 @@ public class MainView extends VerticalLayout {
             Span msgConfirmacion = new Span("¿Estás seguro de que deseas eliminar '" + e.titulo + "'? Esta acción no se puede deshacer.");
 
             Button btnConfirmarEliminar = new Button("Sí, eliminar", eventSi -> {
-                if (!e.imagen.equals("default.png")) {
+                if (!e.imagen.equals("default_elemento.png")) {
                     File fotoFisica = new File("portadas", e.imagen);
                     if (fotoFisica.exists()) {
                         fotoFisica.delete();

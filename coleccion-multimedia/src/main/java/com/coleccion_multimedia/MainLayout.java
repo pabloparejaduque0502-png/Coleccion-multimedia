@@ -26,6 +26,7 @@ public class MainLayout extends AppLayout {
         HorizontalLayout navLinks = new HorizontalLayout(linkHome, linkPrestamos, linkListas, linkEstadisticas);
         navLinks.setAlignItems(HorizontalLayout.Alignment.CENTER);
         navLinks.setSpacing(true);
+        navLinks.getStyle().set("flex-wrap", "wrap");
 
         HorizontalLayout header = new HorizontalLayout(logo, navLinks);
         header.setWidthFull();
@@ -34,6 +35,7 @@ public class MainLayout extends AppLayout {
         
         header.getStyle().set("background-color", "#121212");
         header.getStyle().set("border-bottom", "1px solid #2a2a2a");
+        header.getStyle().set("flex-wrap", "wrap");
         header.addClassNames(LumoUtility.Padding.Horizontal.MEDIUM);
 
         addToNavbar(header);

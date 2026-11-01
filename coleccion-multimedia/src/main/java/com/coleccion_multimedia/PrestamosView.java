@@ -71,6 +71,15 @@ public class PrestamosView extends VerticalLayout {
         Notification.show("Por favor, completa los campos obligatorios.");
         return;
     }
+    if (estaPrestado(cbElemento.getValue().id)) {
+    Notification.show("Este elemento ya se encuentra prestado actualmente.");
+    return;
+    }   
+    if (dpFechaDevolucion.getValue() != null && dpFechaDevolucion.getValue().isBefore(dpFechaPrestamo.getValue())) {
+    Notification.show("La fecha de devolución no puede ser anterior a la fecha de préstamo.");
+    return;
+    }
+    
 
         // 1. Generar ID único para el préstamo basado en timestamp
         String idPrestamo = String.valueOf(System.currentTimeMillis());
@@ -117,6 +126,7 @@ public class PrestamosView extends VerticalLayout {
         barraSuperior.setWidthFull();
         barraSuperior.setJustifyContentMode(JustifyContentMode.BETWEEN);
         barraSuperior.setAlignItems(Alignment.CENTER);
+        barraSuperior.getStyle().set("flex-wrap", "wrap");
 
         add(barraSuperior, contenedorTarjetas);
         cargarTarjetasPrestamo("");
@@ -180,7 +190,7 @@ public class PrestamosView extends VerticalLayout {
 
         File archivo = new File("portadas", e.imagen);
         if (!archivo.exists()) {
-            archivo = new File("portadas", "default.png");
+            archivo = new File("portadas", "default_elemento.png");
         }
 
         DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
@@ -259,4 +269,22 @@ public class PrestamosView extends VerticalLayout {
 
         return details;
     }
+    public boolean estaPrestado(String idElemento) {
+    // 1. Leer todos los préstamos registrados en el archivo plano
+    Prestamo[] prestamos = funciones.leerPrestamos();
+    
+    if (prestamos == null) {
+        return false;
+    }
+    
+    // 2. Recorrer el arreglo buscando coincidencias con el ID del elemento
+    for (int i = 0; i < prestamos.length; i++) {
+        Prestamo p = prestamos[i];
+        if (p != null && p.idElemento.equals(idElemento)) {
+            return true; // ¡Encontrado! Ya está prestado
+        }
+    }
+    
+    return false; // No se encontró ningún préstamo activo con ese ID
+}
 }

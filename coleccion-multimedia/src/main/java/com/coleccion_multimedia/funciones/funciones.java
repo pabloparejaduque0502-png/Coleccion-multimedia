@@ -19,7 +19,6 @@ public class funciones {
     private static final String RUTA_PRESTAMOS = "prestamos.txt";
     private static final String RUTA_LISTAS = "listas.txt";
 
-    // Método auxiliar genérico para contar líneas de cualquier archivo plano
     private static int contarLineas(String ruta) {
         int contador = 0;
         File archivo = new File(ruta);
@@ -69,35 +68,35 @@ public class funciones {
 
                 String[] partes = linea.split("\\|");
 
-                if (partes.length == 9) {
-                    String id = partes[0];
-                    String titulo = partes[1];
-                    TipoMultimedia tipo = TipoMultimedia.valueOf(partes[2]);
-                    String genero = partes[3];
-                    int anio = Integer.parseInt(partes[4]);
-                    String creador = partes[5];
-                    int calificacion = Integer.parseInt(partes[6]);
-                    EstadoMultimedia estado = EstadoMultimedia.valueOf(partes[7]);
-                    String imagen = partes[8];
+                if (partes.length >= 9) {
+                    try {
+                        String id = partes[0].trim();
+                        String titulo = partes[1].trim();
+                        
+                        TipoMultimedia tipo = TipoMultimedia.valueOf(partes[2].trim());
+                        String genero = partes[3].trim();
+                        int anio = Integer.parseInt(partes[4].trim());
+                        String creador = partes[5].trim();
+                        int calificacion = Integer.parseInt(partes[6].trim());
+                        EstadoMultimedia estado = EstadoMultimedia.valueOf(partes[7].toUpperCase().trim());
+                        String imagen = partes[8].trim();
 
-                    elementosTemp[indice] = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado, imagen);
-                    indice++;
+                        elementosTemp[indice] = new ElementoMultimedia(id, titulo, tipo, genero, anio, creador, calificacion, estado, imagen);
+                        indice++;
+                    } catch (Exception ex) {
+                        System.out.println("Error parseando linea en elementos.txt: " + linea + " -> " + ex.getMessage());
+                    }
                 }
             }
         } catch (IOException e) {
             System.out.println("Error al leer el archivo de elementos: " + e.getMessage());
         }
 
-        // Ajuste exacto del tamaño del arreglo tradicional
-        if (indice < totalLineas) {
-            ElementoMultimedia[] resultado = new ElementoMultimedia[indice];
-            for (int i = 0; i < indice; i++) {
-                resultado[i] = elementosTemp[i];
-            }
-            return resultado;
+        ElementoMultimedia[] resultado = new ElementoMultimedia[indice];
+        for (int i = 0; i < indice; i++) {
+            resultado[i] = elementosTemp[i];
         }
-
-        return elementosTemp;
+        return resultado;
     }
 
     public static void eliminarElemento(String id) {
@@ -122,12 +121,12 @@ public class funciones {
         } catch (IOException ex) {
             System.out.println("Error al eliminar el elemento: " + ex.getMessage());
         }
-        // Limpia préstamos asociados al elemento eliminado
-    Prestamo[] prestamos = leerPrestamos();
-    for (int i = 0; i < prestamos.length; i++) {
-        if (prestamos[i] != null && prestamos[i].idElemento.equals(id)) {
-            eliminarPrestamo(prestamos[i].id);
-         }
+
+        Prestamo[] prestamos = leerPrestamos();
+        for (int i = 0; i < prestamos.length; i++) {
+            if (prestamos[i] != null && prestamos[i].idElemento.equals(id)) {
+                eliminarPrestamo(prestamos[i].id);
+            }
         }
     }
 
@@ -175,30 +174,29 @@ public class funciones {
                 String[] partes = linea.split("\\|");
 
                 if (partes.length >= 4) {
-                    String id = partes[0];
-                    String idElemento = partes[1];
-                    String persona = partes[2];
-                    String fechaPrestamo = partes[3];
-                    String fechaDevolucion = (partes.length > 4) ? partes[4] : "Sin fecha";
+                    try {
+                        String id = partes[0].trim();
+                        String idElemento = partes[1].trim();
+                        String persona = partes[2].trim();
+                        String fechaPrestamo = partes[3].trim();
+                        String fechaDevolucion = (partes.length > 4) ? partes[4].trim() : "Sin fecha";
 
-                    prestamosTemp[indice] = new Prestamo(id, idElemento, persona, fechaPrestamo, fechaDevolucion);
-                    indice++;
+                        prestamosTemp[indice] = new Prestamo(id, idElemento, persona, fechaPrestamo, fechaDevolucion);
+                        indice++;
+                    } catch (Exception ex) {
+                        System.out.println("Error parseando linea en prestamos.txt: " + linea);
+                    }
                 }
             }
         } catch (IOException e) {
             System.out.println("Error al leer el archivo de préstamos: " + e.getMessage());
         }
 
-        // Ajuste exacto del tamaño del arreglo
-        if (indice < totalLineas) {
-            Prestamo[] resultado = new Prestamo[indice];
-            for (int i = 0; i < indice; i++) {
-                resultado[i] = prestamosTemp[i];
-            }
-            return resultado;
+        Prestamo[] resultado = new Prestamo[indice];
+        for (int i = 0; i < indice; i++) {
+            resultado[i] = prestamosTemp[i];
         }
-
-        return prestamosTemp;
+        return resultado;
     }
 
     public static void eliminarPrestamo(String id) {
@@ -220,6 +218,7 @@ public class funciones {
             System.out.println("Error al eliminar el préstamo: " + ex.getMessage());
         }
     }
+
     public static void guardarLista(ListaPersonalizada lista) {
         try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_LISTAS, true))) {
             String idsJoin = "";
@@ -255,33 +254,33 @@ public class funciones {
                 String[] partes = linea.split("\\|");
 
                 if (partes.length >= 4) {
-                    String id = partes[0];
-                    String nombre = partes[1];
-                    String descripcion = partes[2];
-                    String imagen = partes[3];
+                    try {
+                        String id = partes[0].trim();
+                        String nombre = partes[1].trim();
+                        String descripcion = partes[2].trim();
+                        String imagen = partes[3].trim();
 
-                    String[] idsElementos = new String[0];
-                    if (partes.length > 4 && !partes[4].trim().isEmpty()) {
-                        idsElementos = partes[4].split(",");
+                        String[] idsElementos = new String[0];
+                        if (partes.length > 4 && !partes[4].trim().isEmpty()) {
+                            idsElementos = partes[4].split(",");
+                        }
+
+                        listasTemp[indice] = new ListaPersonalizada(id, nombre, descripcion, imagen, idsElementos);
+                        indice++;
+                    } catch (Exception ex) {
+                        System.out.println("Error parseando linea en listas.txt: " + linea);
                     }
-
-                    listasTemp[indice] = new ListaPersonalizada(id, nombre, descripcion, imagen, idsElementos);
-                    indice++;
                 }
             }
         } catch (IOException e) {
             System.out.println("Error al leer el archivo de listas: " + e.getMessage());
         }
 
-        if (indice < totalLineas) {
-            ListaPersonalizada[] resultado = new ListaPersonalizada[indice];
-            for (int i = 0; i < indice; i++) {
-                resultado[i] = listasTemp[i];
-            }
-            return resultado;
+        ListaPersonalizada[] resultado = new ListaPersonalizada[indice];
+        for (int i = 0; i < indice; i++) {
+            resultado[i] = listasTemp[i];
         }
-
-        return listasTemp;
+        return resultado;
     }
 
     public static void eliminarLista(String id) {
@@ -307,32 +306,32 @@ public class funciones {
             System.out.println("Error al eliminar la lista personalizada: " + ex.getMessage());
         }
     }
+
     public static void actualizarLista(ListaPersonalizada listaActualizada) {
-    ListaPersonalizada[] listas = leerListas();
+        ListaPersonalizada[] listas = leerListas();
 
-    try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_LISTAS, false))) {
-        for (int i = 0; i < listas.length; i++) {
-            ListaPersonalizada l = listas[i];
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_LISTAS, false))) {
+            for (int i = 0; i < listas.length; i++) {
+                ListaPersonalizada l = listas[i];
 
-            if (l != null) {
-                // Si es la lista que modificamos, reemplazamos la referencia
-                if (l.id.equals(listaActualizada.id)) {
-                    l = listaActualizada;
+                if (l != null) {
+                    if (l.id.equals(listaActualizada.id)) {
+                        l = listaActualizada;
+                    }
+
+                    String idsJoin = (l.idsElementos != null && l.idsElementos.length > 0) 
+                                     ? String.join(",", l.idsElementos) 
+                                     : "";
+
+                    writer.println(l.id + "|" + 
+                                   l.nombre + "|" + 
+                                   l.descripcion + "|" + 
+                                   l.imagen + "|" + 
+                                   idsJoin);
                 }
-
-                String idsJoin = (l.idsElementos != null && l.idsElementos.length > 0) 
-                                 ? String.join(",", l.idsElementos) 
-                                 : "";
-
-                writer.println(l.id + "|" + 
-                               l.nombre + "|" + 
-                               l.descripcion + "|" + 
-                               l.imagen + "|" + 
-                               idsJoin);
             }
+        } catch (IOException ex) {
+            System.out.println("Error al actualizar la lista: " + ex.getMessage());
         }
-    } catch (IOException ex) {
-        System.out.println("Error al actualizar la lista: " + ex.getMessage());
     }
-}
 }
