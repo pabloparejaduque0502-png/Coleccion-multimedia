@@ -4,6 +4,7 @@ import com.coleccion_multimedia.clases.ElementoMultimedia;
 import com.coleccion_multimedia.clases.EstadoMultimedia;
 import com.coleccion_multimedia.clases.Prestamo;
 import com.coleccion_multimedia.clases.TipoMultimedia;
+import com.coleccion_multimedia.clases.ListaPersonalizada;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -16,6 +17,7 @@ public class funciones {
 
     private static final String RUTA_ELEMENTOS = "elementos.txt";
     private static final String RUTA_PRESTAMOS = "prestamos.txt";
+    private static final String RUTA_LISTAS = "listas.txt";
 
     // Método auxiliar genérico para contar líneas de cualquier archivo plano
     private static int contarLineas(String ruta) {
@@ -120,6 +122,13 @@ public class funciones {
         } catch (IOException ex) {
             System.out.println("Error al eliminar el elemento: " + ex.getMessage());
         }
+        // Limpia préstamos asociados al elemento eliminado
+    Prestamo[] prestamos = leerPrestamos();
+    for (int i = 0; i < prestamos.length; i++) {
+        if (prestamos[i] != null && prestamos[i].idElemento.equals(id)) {
+            eliminarPrestamo(prestamos[i].id);
+         }
+        }
     }
 
     public static ElementoMultimedia buscarElementoPorId(String id) {
@@ -211,4 +220,119 @@ public class funciones {
             System.out.println("Error al eliminar el préstamo: " + ex.getMessage());
         }
     }
+    public static void guardarLista(ListaPersonalizada lista) {
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_LISTAS, true))) {
+            String idsJoin = "";
+            if (lista.idsElementos != null && lista.idsElementos.length > 0) {
+                idsJoin = String.join(",", lista.idsElementos);
+            }
+
+            writer.println(lista.id + "|" + 
+                           lista.nombre + "|" + 
+                           lista.descripcion + "|" + 
+                           lista.imagen + "|" + 
+                           idsJoin);
+        } catch (IOException e) {
+            System.out.println("Error al guardar la lista personalizada: " + e.getMessage());
+        }
+    }
+
+    public static ListaPersonalizada[] leerListas() {
+        int totalLineas = contarLineas(RUTA_LISTAS);
+        if (totalLineas == 0) {
+            return new ListaPersonalizada[0];
+        }
+
+        ListaPersonalizada[] listasTemp = new ListaPersonalizada[totalLineas];
+        int indice = 0;
+
+        File archivo = new File(RUTA_LISTAS);
+        try (BufferedReader reader = new BufferedReader(new FileReader(archivo))) {
+            String linea;
+            while ((linea = reader.readLine()) != null) {
+                if (linea.trim().isEmpty()) continue;
+
+                String[] partes = linea.split("\\|");
+
+                if (partes.length >= 4) {
+                    String id = partes[0];
+                    String nombre = partes[1];
+                    String descripcion = partes[2];
+                    String imagen = partes[3];
+
+                    String[] idsElementos = new String[0];
+                    if (partes.length > 4 && !partes[4].trim().isEmpty()) {
+                        idsElementos = partes[4].split(",");
+                    }
+
+                    listasTemp[indice] = new ListaPersonalizada(id, nombre, descripcion, imagen, idsElementos);
+                    indice++;
+                }
+            }
+        } catch (IOException e) {
+            System.out.println("Error al leer el archivo de listas: " + e.getMessage());
+        }
+
+        if (indice < totalLineas) {
+            ListaPersonalizada[] resultado = new ListaPersonalizada[indice];
+            for (int i = 0; i < indice; i++) {
+                resultado[i] = listasTemp[i];
+            }
+            return resultado;
+        }
+
+        return listasTemp;
+    }
+
+    public static void eliminarLista(String id) {
+        ListaPersonalizada[] listas = leerListas();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_LISTAS, false))) {
+            for (int i = 0; i < listas.length; i++) {
+                ListaPersonalizada l = listas[i];
+
+                if (l != null && !l.id.equals(id)) {
+                    String idsJoin = (l.idsElementos != null && l.idsElementos.length > 0) 
+                                     ? String.join(",", l.idsElementos) 
+                                     : "";
+
+                    writer.println(l.id + "|" + 
+                                   l.nombre + "|" + 
+                                   l.descripcion + "|" + 
+                                   l.imagen + "|" + 
+                                   idsJoin);
+                }
+            }
+        } catch (IOException ex) {
+            System.out.println("Error al eliminar la lista personalizada: " + ex.getMessage());
+        }
+    }
+    public static void actualizarLista(ListaPersonalizada listaActualizada) {
+    ListaPersonalizada[] listas = leerListas();
+
+    try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_LISTAS, false))) {
+        for (int i = 0; i < listas.length; i++) {
+            ListaPersonalizada l = listas[i];
+
+            if (l != null) {
+                // Si es la lista que modificamos, reemplazamos la referencia
+                if (l.id.equals(listaActualizada.id)) {
+                    l = listaActualizada;
+                }
+
+                String idsJoin = (l.idsElementos != null && l.idsElementos.length > 0) 
+                                 ? String.join(",", l.idsElementos) 
+                                 : "";
+
+                writer.println(l.id + "|" + 
+                               l.nombre + "|" + 
+                               l.descripcion + "|" + 
+                               l.imagen + "|" + 
+                               idsJoin);
+            }
+        }
+    } catch (IOException ex) {
+        System.out.println("Error al actualizar la lista: " + ex.getMessage());
+    }
+}
 }

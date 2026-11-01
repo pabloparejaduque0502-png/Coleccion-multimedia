@@ -130,8 +130,7 @@ public class MainView extends VerticalLayout {
                 }
             }
 
-            int nuevoIdNumero = funciones.leerElementos().length + 1;
-            String id = String.valueOf(nuevoIdNumero);
+            String id = String.valueOf(System.currentTimeMillis());
 
             ElementoMultimedia nuevo = new ElementoMultimedia(
                 id,
@@ -281,8 +280,7 @@ public class MainView extends VerticalLayout {
 
         Estrellas estrellasLectura = new Estrellas(e.calificacion, false);
 
-        tarjeta.add(imgPortada, lblTitulo,  estrellasLectura);
-        tarjeta.addClickListener(event -> abrirFichaDetalles(e));
+        
         Details ficha = abrirFichaDetalles(e);
         tarjeta.add(imgPortada, lblTitulo, estrellasLectura, ficha);
 
