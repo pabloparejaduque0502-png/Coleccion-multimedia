@@ -1,6 +1,7 @@
 package com.coleccion_multimedia;
 
 import com.coleccion_multimedia.clases.ElementoMultimedia;
+import com.coleccion_multimedia.clases.EstadoMultimedia;
 import com.coleccion_multimedia.clases.ListaPersonalizada;
 import com.coleccion_multimedia.clases.Prestamo;
 import com.coleccion_multimedia.clases.TipoMultimedia;
@@ -49,9 +50,13 @@ public class EstadisticasView extends VerticalLayout {
 
         // Renderizado e inclusión del panel de tipos
         VerticalLayout panelTipos = crearPanelPorTipo(elementos);
-        contenedorPaneles.add(panelTipos);
+        VerticalLayout panelEstados = crearPanelPorEstado(elementos);
+        contenedorPaneles.add(panelTipos,panelEstados);
+        
 
         add(contenedorPaneles);
+
+
     }
        // --- SECCIÓN 1: MÉTRICAS GLOBALES (EST) ---
     private HorizontalLayout crearBarraEst(ElementoMultimedia[] elementos, Prestamo[] prestamos, ListaPersonalizada[] listas) {
@@ -186,4 +191,67 @@ public class EstadisticasView extends VerticalLayout {
 
         return contenedorFila;
     }
+    private VerticalLayout crearPanelPorEstado(ElementoMultimedia[] elementos) {
+    VerticalLayout panel = new VerticalLayout();
+    panel.getStyle().set("background-color", "#181818");
+    panel.getStyle().set("border", "1px solid #2a2a2a");
+    panel.getStyle().set("border-radius", "12px");
+    panel.getStyle().set("flex", "1");
+    panel.getStyle().set("min-width", "300px");
+    panel.setPadding(true);
+    panel.setSpacing(true);
+
+    H4 tituloPanel = new H4("Estado de Consumo");
+    tituloPanel.getStyle().set("color", "#ffffff");
+    tituloPanel.getStyle().set("margin", "0 0 10px 0");
+    panel.add(tituloPanel);
+
+    // Grilla flexible para ubicar las tarjetas internas
+    FlexLayout grillaEstados = new FlexLayout();
+    grillaEstados.setWidthFull();
+    grillaEstados.getStyle().set("gap", "12px");
+    grillaEstados.getStyle().set("flex-wrap", "wrap");
+
+    EstadoMultimedia[] estados = EstadoMultimedia.values();
+
+    for (int i = 0; i < estados.length; i++) {
+        EstadoMultimedia est = estados[i];
+        int contador = 0;
+
+        // Conteo manual en el arreglo plano
+        for (int j = 0; j < elementos.length; j++) {
+            if (elementos[j] != null && elementos[j].estado == est) {
+                contador++;
+            }
+        }
+
+        String colorValor;
+        switch (est) {
+            case COMPLETADO:
+                colorValor = "#4caf50"; // Verde
+                break;
+            case EN_PROCESO:
+                colorValor = "#2196f3"; // Azul
+                break;
+            case PENDIENTE:
+                colorValor = "#ff9800"; // Naranja
+                break;
+            default:
+                colorValor = "#ff4d4d"; // Rojo Akatsuki para ABANDONADO u otros
+                break;
+        }
+
+        String nombreEstado = est.name().replace("_", " ");
+        
+        // Se reutiliza la estructura de tarjetas 'Est' adaptando el fondo e indicando min-width
+        VerticalLayout tarjetaEstado = crearTarjetaEst(nombreEstado, String.valueOf(contador), colorValor);
+        tarjetaEstado.getStyle().set("background-color", "#111111");
+        tarjetaEstado.getStyle().set("min-width", "130px");
+        
+        grillaEstados.add(tarjetaEstado);
+    }
+
+    panel.add(grillaEstados);
+    return panel;
+}
 }
