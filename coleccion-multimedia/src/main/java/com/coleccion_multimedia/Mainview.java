@@ -37,6 +37,21 @@ public class MainView extends VerticalLayout {
 
     public FlexLayout contenedorTarjetas = new FlexLayout();
     public TextField txtBuscar = new TextField();
+    public Dialog dialogFormulario = new Dialog();
+    public TextField txtTitulo = new TextField("Título");
+    public ComboBox<TipoMultimedia> cbTipo = new ComboBox<>("Tipo");
+    public TextField txtGenero = new TextField("Género");
+    public IntegerField txtAnio = new IntegerField("Año");
+    public TextField txtCreador = new TextField("Creador (Director/Artista)");
+    public Estrellas ratingCalificacion = new Estrellas();
+    public ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
+    public Upload uploadPortada;
+    public String[] nombreArchivoSubido = new String[]{ "default_elemento.png" };
+    public byte[][] bytesImagenSubida = new byte[1][];
+
+    public String idEditando = null;
+    public String imagenActual = "default_elemento.png";
+    
 
     public MainView() {
         setClassName("main-view");
@@ -46,6 +61,7 @@ public class MainView extends VerticalLayout {
         contenedorTarjetas.setWidthFull();
         contenedorTarjetas.getStyle().set("flex-wrap", "wrap");
         contenedorTarjetas.getStyle().set("gap", "20px");
+        contenedorTarjetas.getStyle().set("align-items", "flex-start");
 
         txtBuscar.setPlaceholder("Buscar por título, género, creador o año...");
         txtBuscar.setMaxWidth("600px");
@@ -54,18 +70,9 @@ public class MainView extends VerticalLayout {
         txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
         txtBuscar.addValueChangeListener(e -> cargarTarjetas(e.getValue()));
 
-        Dialog dialogFormulario = new Dialog();
         dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
-
-        TextField txtTitulo = new TextField("Título");
-        ComboBox<TipoMultimedia> cbTipo = new ComboBox<>("Tipo");
         cbTipo.setItems(TipoMultimedia.values());
-
-        TextField txtGenero = new TextField("Género");
-        IntegerField txtAnio = new IntegerField("Año"); 
-        TextField txtCreador = new TextField("Creador (Director/Artista)");
         
-        Estrellas ratingCalificacion = new Estrellas();
         Span lblCalificacion = new Span("Calificación");
         lblCalificacion.getStyle().set("font-size", "var(--lumo-font-size-s)");
         lblCalificacion.getStyle().set("color", "var(--lumo-secondary-text-color)");
@@ -75,18 +82,14 @@ public class MainView extends VerticalLayout {
         campoCalificacion.setPadding(false);
         campoCalificacion.setSpacing(false);
         
-        ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
         cbEstado.setItems(EstadoMultimedia.values());
-
-        final String[] nombreArchivoSubido = new String[]{ "default_elemento.png" };
-        final byte[][] bytesImagenSubida = new byte[1][];
 
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
             nombreArchivoSubido[0] = metadata.fileName();
             bytesImagenSubida[0] = data;
         });
 
-        Upload uploadPortada = new Upload(handlerImagen);
+        uploadPortada = new Upload(handlerImagen);
         
         String[] extensionesPermitidas = new String[]{ ".jpg", ".jpeg", ".png" };
         uploadPortada.setAcceptedFileExtensions(extensionesPermitidas);
@@ -109,7 +112,7 @@ public class MainView extends VerticalLayout {
                 return;
             }
 
-            String nombreImagenFinal = "default_elemento.png";
+            String nombreImagenFinal = imagenActual;
 
             if (bytesImagenSubida[0] != null && bytesImagenSubida[0].length > 0) {
                 try {
@@ -131,37 +134,50 @@ public class MainView extends VerticalLayout {
                 }
             }
 
-            String id = String.valueOf(System.currentTimeMillis());
+                        if (idEditando == null) {
+                String id = String.valueOf(System.currentTimeMillis());
 
-            ElementoMultimedia nuevo = new ElementoMultimedia(
-                id,
-                txtTitulo.getValue(),
-                cbTipo.getValue(),
-                txtGenero.getValue(),
-                anio,
-                txtCreador.getValue(),
-                calificacion,
-                cbEstado.getValue(),
-                nombreImagenFinal
-            );
+                ElementoMultimedia nuevo = new ElementoMultimedia(
+                    id,
+                    txtTitulo.getValue(),
+                    cbTipo.getValue(),
+                    txtGenero.getValue(),
+                    anio,
+                    txtCreador.getValue(),
+                    calificacion,
+                    cbEstado.getValue(),
+                    nombreImagenFinal
+                );
 
-            funciones.guardarElemento(nuevo);
-            Notification.show("¡Elemento guardado en el archivo!");
+                funciones.guardarElemento(nuevo);
+                Notification.show("¡Elemento guardado en el archivo!");
 
-            cargarTarjetas();
+            } else {
+                if (!nombreImagenFinal.equals(imagenActual) && !imagenActual.equals("default_elemento.png")) {
+                    File fotoVieja = new File("portadas", imagenActual);
+                    if (fotoVieja.exists()) {
+                        fotoVieja.delete();
+                    }
+                }
 
-            txtTitulo.clear();
-            cbTipo.clear();
-            txtGenero.clear();
-            txtAnio.clear();
-            txtCreador.clear();
-            ratingCalificacion.limpiar();
-            cbEstado.clear();
-            uploadPortada.clearFileList();
-            
-            nombreArchivoSubido[0] = "default_elemento.png";
-            bytesImagenSubida[0] = null;
+                ElementoMultimedia editado = new ElementoMultimedia(
+                    idEditando,
+                    txtTitulo.getValue(),
+                    cbTipo.getValue(),
+                    txtGenero.getValue(),
+                    anio,
+                    txtCreador.getValue(),
+                    calificacion,
+                    cbEstado.getValue(),
+                    nombreImagenFinal
+                );
 
+                funciones.actualizarElemento(editado);
+                Notification.show("¡Elemento actualizado!");
+            }
+
+            cargarTarjetas(txtBuscar.getValue());
+            limpiarFormulario();
             dialogFormulario.close();
         });
         btnGuardar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -181,7 +197,11 @@ public class MainView extends VerticalLayout {
         H2 titulo = new H2("Mi Colección");
         titulo.getStyle().set("color", "#ffffff");
 
-        Button btnNuevo = new Button("+ Nuevo Elemento", e -> dialogFormulario.open());
+        Button btnNuevo = new Button("+ Nuevo Elemento", e -> {
+        limpiarFormulario();
+        dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
+        dialogFormulario.open();
+        });
         btnNuevo.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
         HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar, btnNuevo);
@@ -193,7 +213,22 @@ public class MainView extends VerticalLayout {
         add(barraSuperior, contenedorTarjetas);
         cargarTarjetas();
     }
+    public void limpiarFormulario() {
+        txtTitulo.clear();
+        cbTipo.clear();
+        txtGenero.clear();
+        txtAnio.clear();
+        txtCreador.clear();
+        ratingCalificacion.limpiar();
+        cbEstado.clear();
+        uploadPortada.clearFileList();
 
+        nombreArchivoSubido[0] = "default_elemento.png";
+        bytesImagenSubida[0] = null;
+
+        idEditando = null;
+        imagenActual = "default_elemento.png";
+    }
     public void cargarTarjetas() {
         cargarTarjetas("");
     }
@@ -341,11 +376,32 @@ public class MainView extends VerticalLayout {
         btnEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         btnEliminar.setWidthFull();
 
+        Button btnEditar = new Button("Editar", eventEdit -> {
+        limpiarFormulario();
+
+        txtTitulo.setValue(e.titulo);
+        cbTipo.setValue(e.tipo);
+        txtGenero.setValue(e.genero);
+        txtAnio.setValue(e.anio);     
+       txtCreador.setValue(e.creador);
+        ratingCalificacion.cambiarPuntuacion(e.calificacion);
+        cbEstado.setValue(e.estado);
+        idEditando = e.id;
+        imagenActual = e.imagen;
+
+        dialogFormulario.setHeaderTitle("Editar Elemento");
+        dialogFormulario.open();
+        });
+        btnEditar.getStyle().set("color", "#ff4d4d");
+        btnEditar.getStyle().set("background-color", "#2a2a2a");
+        btnEditar.setWidthFull();
+        
         // 4. Agrupación de todos los elementos dentro del contenedor del acordeón
         VerticalLayout layoutContenido = new VerticalLayout(
             lblDetalles, 
             lblCreadorAnio, 
             lblEstado, 
+            btnEditar,
             btnEliminar
         );
         layoutContenido.setPadding(false);

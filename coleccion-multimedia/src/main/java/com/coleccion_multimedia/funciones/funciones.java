@@ -130,6 +130,33 @@ public class funciones {
         }
     }
 
+     public static void actualizarElemento(ElementoMultimedia actualizado) {
+        ElementoMultimedia[] elementos = leerElementos();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_ELEMENTOS, false))) {
+            for (int i = 0; i < elementos.length; i++) {
+                ElementoMultimedia e = elementos[i];
+
+                if (e != null) {
+                    if (e.id.equals(actualizado.id)) {
+                        e = actualizado;
+                    }
+
+                    writer.println(e.id + "|" + 
+                                   e.titulo + "|" +
+                                   e.tipo + "|" + 
+                                   e.genero + "|" + 
+                                   e.anio + "|" + 
+                                   e.creador + "|" + 
+                                   e.calificacion + "|" + 
+                                   e.estado + "|" + 
+                                   e.imagen);
+                }
+            }
+        } catch (IOException ex) {
+            System.out.println("Error al actualizar el elemento: " + ex.getMessage());
+        }
+    }
     public static ElementoMultimedia buscarElementoPorId(String id) {
         ElementoMultimedia[] elementos = leerElementos();
         for (int i = 0; i < elementos.length; i++) {
