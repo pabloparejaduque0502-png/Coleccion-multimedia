@@ -356,6 +356,82 @@ public class ListasView extends VerticalLayout {
         barraAgregar.setWidthFull();
         barraAgregar.setAlignItems(Alignment.BASELINE);
 
+        // Editar nombre, descripción y portada (los elementos ya se añaden y quitan arriba)
+        Button btnEditar = new Button("Editar Lista", eventEdit -> {
+            Dialog dialogEditar = new Dialog();
+            dialogEditar.setHeaderTitle("Editar Lista");
+
+            TextField txtNombreEditar = new TextField("Nombre de la Lista");
+            txtNombreEditar.setValue(l.nombre);
+
+            TextArea txtDescripcionEditar = new TextArea("Descripción (Opcional)");
+            if (!l.descripcion.equals("Sin descripción")) {
+                txtDescripcionEditar.setValue(l.descripcion);
+            }
+
+            String[] nombreArchivoEditar = new String[]{ funciones.PORTADA_LISTA };
+            byte[][] bytesImagenEditar = new byte[1][];
+
+            UploadHandler handlerEditar = UploadHandler.inMemory((metadata, data) -> {
+                nombreArchivoEditar[0] = metadata.fileName();
+                bytesImagenEditar[0] = data;
+            });
+
+            Upload uploadEditar = new Upload(handlerEditar);
+            uploadEditar.setAcceptedFileExtensions(".jpg", ".jpeg", ".png");
+            uploadEditar.setMaxFileSize(2 * 1024 * 1024);
+            uploadEditar.setMaxFiles(1);
+
+            Button btnGuardarEditar = new Button("Guardar Cambios", eventGuardar -> {
+                if (funciones.estaVacio(txtNombreEditar.getValue())) {
+                    Notification.show("Por favor, ingresa un nombre para la lista.");
+                    return;
+                }
+                if (funciones.tieneCaracterProhibido(txtNombreEditar.getValue()) || funciones.tieneCaracterProhibido(txtDescripcionEditar.getValue())) {
+                    Notification.show("El nombre y la descripción no pueden contener el carácter | ni saltos de línea.");
+                    return;
+                }
+
+                // Si se subió una portada nueva, se guarda y la vieja se borra para no dejar imágenes sin usar
+                if (bytesImagenEditar[0] != null) {
+                    String nombreImagen = funciones.guardarPortada(bytesImagenEditar[0], nombreArchivoEditar[0]);
+                    if (nombreImagen == null) {
+                        Notification.show("Error al guardar la imagen de la lista.");
+                        return;
+                    }
+                    funciones.borrarPortada(l.imagen);
+                    l.imagen = nombreImagen;
+                }
+
+                l.nombre = txtNombreEditar.getValue().trim();
+                l.descripcion = txtDescripcionEditar.getValue().trim();
+                if (l.descripcion.isEmpty()) {
+                    l.descripcion = "Sin descripción";
+                }
+
+                funciones.actualizarLista(l);
+                Notification.show("Lista actualizada correctamente.");
+                cargarTarjetas();
+                dialogEditar.close();
+            });
+            btnGuardarEditar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+            Button btnCancelarEditar = new Button("Cancelar", eventNo -> dialogEditar.close());
+            btnCancelarEditar.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            btnCancelarEditar.getStyle().set("color", "#ff4d4d");
+
+            FormLayout formularioEditar = new FormLayout();
+            formularioEditar.add(txtNombreEditar, txtDescripcionEditar, uploadEditar);
+            formularioEditar.setColspan(uploadEditar, 2);
+
+            dialogEditar.add(formularioEditar);
+            dialogEditar.getFooter().add(btnCancelarEditar, btnGuardarEditar);
+            dialogEditar.open();
+        });
+        btnEditar.getStyle().set("color", "#ff4d4d");
+        btnEditar.getStyle().set("background-color", "#2a2a2a");
+        btnEditar.setWidthFull();
+
         // Eliminar la lista completa
         Button btnEliminar = new Button("Eliminar Lista", eventDel -> {
             Dialog dialogConfirmacion = new Dialog();
@@ -382,7 +458,7 @@ public class ListasView extends VerticalLayout {
         btnEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         btnEliminar.setWidthFull();
 
-        layoutContenido.add(barraAgregar, btnEliminar);
+        layoutContenido.add(barraAgregar,btnEditar,btnEliminar);
 
         Span lblSummary = new Span("Ver contenido de la lista");
         lblSummary.getStyle().set("color", "#ffffff");

@@ -238,6 +238,46 @@ public class PrestamosView extends VerticalLayout {
         lblFechaDevolucion.getStyle().set("color", "#aaaaaa");
         lblFechaDevolucion.getStyle().set("font-size", "0.85rem");
 
+        // Editar solo la fecha de devolución
+        Button btnEditar = new Button("Cambiar Fecha de Devolución", eventEdit -> {
+            Dialog dialogEditar = new Dialog();
+            dialogEditar.setHeaderTitle("Cambiar Fecha de Devolución");
+
+            DatePicker dpDevolucionEditar = new DatePicker("Fecha acordada de devolución (Opcional)");
+            if (!p.fechaDevolucion.equals("Sin fecha")) {
+                dpDevolucionEditar.setValue(LocalDate.parse(p.fechaDevolucion));
+            }
+
+            Button btnGuardarEditar = new Button("Guardar Cambios", eventGuardar -> {
+                if (dpDevolucionEditar.getValue() != null && dpDevolucionEditar.getValue().isBefore(LocalDate.parse(p.fechaPrestamo))) {
+                    Notification.show("La fecha de devolución no puede ser anterior a la fecha de préstamo.");
+                    return;
+                }
+
+                p.fechaDevolucion = "Sin fecha";
+                if (dpDevolucionEditar.getValue() != null) {
+                    p.fechaDevolucion = dpDevolucionEditar.getValue().toString();
+                }
+
+                funciones.actualizarPrestamo(p);
+                Notification.show("Fecha de devolución actualizada.");
+                cargarTarjetas();
+                dialogEditar.close();
+            });
+            btnGuardarEditar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+            Button btnCancelarEditar = new Button("Cancelar", eventNo -> dialogEditar.close());
+            btnCancelarEditar.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            btnCancelarEditar.getStyle().set("color", "#ff4d4d");
+
+            dialogEditar.add(dpDevolucionEditar);
+            dialogEditar.getFooter().add(btnCancelarEditar, btnGuardarEditar);
+            dialogEditar.open();
+        });
+        btnEditar.getStyle().set("color", "#ff4d4d");
+        btnEditar.getStyle().set("background-color", "#2a2a2a");
+        btnEditar.setWidthFull();
+
         // Marcar devuelto: pide confirmación y borra el préstamo
         Button btnDevolver = new Button("Marcar Devuelto", eventDev -> {
             Dialog dialogConfirmacion = new Dialog();
@@ -264,7 +304,7 @@ public class PrestamosView extends VerticalLayout {
         btnDevolver.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         btnDevolver.setWidthFull();
 
-        VerticalLayout layoutContenido = new VerticalLayout(lblPrestadoA, lblFechaPrestamo, lblFechaDevolucion, btnDevolver);
+        VerticalLayout layoutContenido = new VerticalLayout(lblPrestadoA, lblFechaPrestamo, lblFechaDevolucion,btnEditar, btnDevolver);
         layoutContenido.setPadding(false);
         layoutContenido.setSpacing(true);
         layoutContenido.getStyle().set("margin-top", "10px");

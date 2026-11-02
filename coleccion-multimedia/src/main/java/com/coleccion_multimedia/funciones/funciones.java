@@ -292,6 +292,23 @@ public class funciones {
         return resultado;
     }
 
+        public static void actualizarPrestamo(Prestamo prestamoActualizado) {
+        Prestamo[] prestamos = leerPrestamos();
+
+        try (PrintWriter writer = new PrintWriter(new FileWriter(RUTA_PRESTAMOS, false))) {
+            for (int i = 0; i < prestamos.length; i++) {
+                Prestamo p = prestamos[i];
+
+                if (p.id.equals(prestamoActualizado.id)) {
+                    p = prestamoActualizado;
+                }
+                writer.println(lineaPrestamo(p));
+            }
+        } catch (IOException ex) {
+            System.out.println("Error al actualizar el préstamo: " + ex.getMessage());
+        }
+    }
+
     public static void eliminarPrestamo(String id) {
         Prestamo[] prestamos = leerPrestamos();
 
