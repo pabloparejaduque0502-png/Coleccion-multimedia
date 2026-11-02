@@ -20,10 +20,10 @@ import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
 import com.vaadin.flow.component.textfield.IntegerField; 
 import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.select.Select;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-
 import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.server.streams.DownloadHandler;
@@ -37,6 +37,7 @@ public class MainView extends VerticalLayout {
 
     public FlexLayout contenedorTarjetas = new FlexLayout();
     public TextField txtBuscar = new TextField();
+    public Select<TipoMultimedia> filtroTipo = new Select<>();
     public Dialog dialogFormulario = new Dialog();
     public TextField txtTitulo = new TextField("Título");
     public ComboBox<TipoMultimedia> cbTipo = new ComboBox<>("Tipo");
@@ -69,6 +70,14 @@ public class MainView extends VerticalLayout {
         txtBuscar.setClearButtonVisible(true);
         txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
         txtBuscar.addValueChangeListener(e -> cargarTarjetas(e.getValue()));
+        filtroTipo.setItems(TipoMultimedia.values());
+        filtroTipo.setPlaceholder("Todos los tipos");
+        filtroTipo.setEmptySelectionAllowed(true);
+        filtroTipo.setEmptySelectionCaption("Todos los tipos");
+        filtroTipo.addValueChangeListener(e -> cargarTarjetas(txtBuscar.getValue()));
+        filtroTipo.setWidth("200px");
+        filtroTipo.getStyle().set("background-color", "#2a2a2a");
+        filtroTipo.getStyle().set("border-radius", "8px");
 
         dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
         cbTipo.setItems(TipoMultimedia.values());
@@ -204,7 +213,7 @@ public class MainView extends VerticalLayout {
         });
         btnNuevo.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
-        HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar, btnNuevo);
+        HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar,filtroTipo, btnNuevo);
         barraSuperior.setWidthFull();
         barraSuperior.setJustifyContentMode(JustifyContentMode.BETWEEN);
         barraSuperior.setAlignItems(Alignment.CENTER);
@@ -245,6 +254,9 @@ public class MainView extends VerticalLayout {
             if (e == null) {
                 continue;
             }
+             if (filtroTipo.getValue() != null && e.tipo != filtroTipo.getValue()) {
+                continue;
+            }
 
             if (filtro != null && !filtro.trim().isEmpty()) {
                 String busqueda = filtro.toLowerCase().trim();
@@ -272,8 +284,8 @@ public class MainView extends VerticalLayout {
         if (tarjetasMostradas == 0) {
             String textoMensaje;
 
-            if (filtro != null && !filtro.trim().isEmpty()) {
-                textoMensaje = "No se encontraron resultados para '" + filtro + "'.";
+            if (filtroTipo.getValue() != null || (filtro != null && !filtro.trim().isEmpty())) {
+                textoMensaje = "No se encontraron resultados con esa búsqueda o filtro.";
             } else {
                 textoMensaje = "Tu colección está vacía. Agrega tu primer elemento con el botón '+ Nuevo Elemento'.";
             }
