@@ -55,7 +55,8 @@ public class MainView extends VerticalLayout {
     public String imagenActual = funciones.PORTADA_ELEMENTO;
 
     public MainView() {
-        setSizeFull();
+        setWidthFull();
+        setMinHeight("100%");
         getStyle().set("background-color", "#000000");
 
         contenedorTarjetas.setWidthFull();

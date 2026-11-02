@@ -1,6 +1,5 @@
 package com.coleccion_multimedia;
 
-import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.applayout.AppLayout;
 import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
@@ -11,7 +10,6 @@ public class MainLayout extends AppLayout {
 
     public MainLayout() {
         // Tema oscuro nativo global de Vaadin Lumo
-        UI.getCurrent().getElement().setAttribute("theme", "dark");
         getElement().getStyle().set("background-color", "#000000");
 
         H1 logo = new H1("☁️ Akatsuki Media");

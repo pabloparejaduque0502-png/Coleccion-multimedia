@@ -22,7 +22,8 @@ import com.vaadin.flow.router.Route;
 public class EstadisticasView extends VerticalLayout {
 
     public EstadisticasView() {
-        setSizeFull();
+        setWidthFull();
+        setMinHeight("100%");
         getStyle().set("background-color", "#000000");
         setPadding(true);
         setSpacing(true);
@@ -170,19 +171,44 @@ public class EstadisticasView extends VerticalLayout {
         panel.add(grillaEstados);
         return panel;
     }
-    // Panel con una barra de porcentaje por cada género
+       // Panel con los 3 géneros que más se repiten
     private VerticalLayout crearPanelPorGenero(ElementoMultimedia[] elementos) {
-        VerticalLayout panel = crearPanel("Distribución por Género");
+        VerticalLayout panel = crearPanel("Top 3 Géneros");
 
+        // Arreglos paralelos: el género en generos[i] tiene cantidades[i] elementos
         String[] generos = funciones.generosUnicos(elementos);
+        int[] cantidades = new int[generos.length];
         for (int i = 0; i < generos.length; i++) {
-            int contador = 0;
             for (int j = 0; j < elementos.length; j++) {
                 if (elementos[j].genero.equalsIgnoreCase(generos[i])) {
-                    contador++;
+                    cantidades[i]++;
                 }
             }
-            panel.add(crearFilaConBarra(generos[i], contador, elementos.length, "#e50914"));
+        }
+
+        // Burbuja de mayor a menor cantidad, moviendo los dos arreglos a la vez
+        for (int i = 0; i < generos.length - 1; i++) {
+            for (int j = 0; j < generos.length - i - 1; j++) {
+                if (cantidades[j] < cantidades[j + 1]) {
+                    int tempCantidad = cantidades[j];
+                    cantidades[j] = cantidades[j + 1];
+                    cantidades[j + 1] = tempCantidad;
+
+                    String tempGenero = generos[j];
+                    generos[j] = generos[j + 1];
+                    generos[j + 1] = tempGenero;
+                }
+            }
+        }
+
+        // Se muestran 3, o menos si hay menos de 3 géneros
+        int cantidadTop = 3;
+        if (generos.length < 3) {
+            cantidadTop = generos.length;
+        }
+
+        for (int i = 0; i < cantidadTop; i++) {
+            panel.add(crearFilaConBarra(generos[i], cantidades[i], elementos.length, "#e50914"));
         }
         return panel;
     }

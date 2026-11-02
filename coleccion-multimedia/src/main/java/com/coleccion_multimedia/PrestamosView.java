@@ -34,7 +34,8 @@ public class PrestamosView extends VerticalLayout {
     public TextField txtBuscar = new TextField();
 
     public PrestamosView() {
-        setSizeFull();
+        setWidthFull();
+        setMinHeight("100%");
         getStyle().set("background-color", "#000000");
 
         contenedorTarjetas.setWidthFull();
