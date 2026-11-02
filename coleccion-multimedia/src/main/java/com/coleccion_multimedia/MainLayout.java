@@ -5,11 +5,13 @@ import com.vaadin.flow.component.html.H1;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.router.RouterLink;
 import com.vaadin.flow.theme.lumo.LumoUtility;
+import com.vaadin.flow.component.UI;
 
 public class MainLayout extends AppLayout {
 
     public MainLayout() {
-        // Tema oscuro nativo global de Vaadin Lumo
+        // Tema oscuro: Vaadin 25 lo lee del <html>, por eso se pone ahí y no en el <body>
+        UI.getCurrent().getPage().executeJs("document.documentElement.setAttribute('theme', 'dark')");
         getElement().getStyle().set("background-color", "#000000");
 
         H1 logo = new H1("☁️ Akatsuki Media");
