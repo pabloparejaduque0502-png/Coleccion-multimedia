@@ -1,0 +1,9 @@
+1793585452418|crazy story|Cancion|drill|2016|king von|5|COMPLETADO|1793585452400_artworks-000599699847-nqktci-t1080x1080.jpg
+1793585522603|naruto|Anime|shonen|2002|masashi kishimoto|5|COMPLETADO|1793585522602_images.jpg
+1793600000001|Naruto Shippuden|Anime|shonen|2007|masashi kishimoto|5|EN_PROCESO|1793586096068_images.jpg
+1793600000002|Avengers: Endgame|Pelicula|superheroes|2019|anthony y joe russo|4|COMPLETADO|1793586120283_images.jpg
+1793600000003|Fight Class 3|Manga|accion|2016|lee hak|4|PENDIENTE|1793586158387_images.jpg
+1793600000004|The Bad Boy|Album|reggaeton|2006|hector el father|5|COMPLETADO|1793586182643_1900x1900-000000-80-0-0.jpg
+1793600000005|Mientras Tú Duermes|Cancion|corridos tumbados|2023|junior h|4|EN_PROCESO|default_elemento.png
+1793600000006|Loki|Serie|superheroes|2021|michael waldron|5|COMPLETADO|default_elemento.png
+1793600000007|VisionQuest|Serie|superheroes|2026|terry matalas|4|EN_PROCESO|default_elemento.png

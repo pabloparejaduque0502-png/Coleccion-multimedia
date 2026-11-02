@@ -277,8 +277,29 @@ public class MainView extends VerticalLayout {
         Image imgPortada = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo);
         imgPortada.setWidth("100%");
         imgPortada.setHeight("200px");
-        imgPortada.getStyle().set("object-fit", "cover");
+        imgPortada.getStyle().set("object-fit", "contain");
+        imgPortada.getStyle().set("background-color", "#111111");
         imgPortada.getStyle().set("border-radius", "8px");
+
+         // Al hacer clic en la portada se abre en grande
+        imgPortada.getStyle().set("cursor", "pointer");
+        imgPortada.addClickListener(clic -> {
+            Dialog dialogPortada = new Dialog();
+            dialogPortada.setHeaderTitle(e.titulo);
+
+            Image imgGrande = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo);
+            imgGrande.setWidth("min(500px, 80vw)");
+            imgGrande.getStyle().set("max-height", "70vh");
+            imgGrande.getStyle().set("object-fit", "contain");
+
+            Button btnCerrar = new Button("Cerrar", eventCerrar -> dialogPortada.close());
+            btnCerrar.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+            btnCerrar.getStyle().set("color", "#ff4d4d");
+
+            dialogPortada.add(imgGrande);
+            dialogPortada.getFooter().add(btnCerrar);
+            dialogPortada.open();
+        });
 
         H4 lblTitulo = new H4(e.titulo);
         lblTitulo.getStyle().set("margin", "0");
