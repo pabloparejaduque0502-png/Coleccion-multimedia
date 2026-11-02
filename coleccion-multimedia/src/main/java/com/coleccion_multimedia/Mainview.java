@@ -1,13 +1,14 @@
 package com.coleccion_multimedia;
 
 import com.coleccion_multimedia.clases.ElementoMultimedia;
-import com.coleccion_multimedia.clases.TipoMultimedia;
 import com.coleccion_multimedia.clases.EstadoMultimedia;
+import com.coleccion_multimedia.clases.TipoMultimedia;
 import com.coleccion_multimedia.funciones.funciones;
 import com.coleccion_multimedia.icon.Estrellas;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
 import com.vaadin.flow.component.combobox.ComboBox;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.dialog.Dialog;
 import com.vaadin.flow.component.formlayout.FormLayout;
 import com.vaadin.flow.component.html.H2;
@@ -18,18 +19,15 @@ import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.orderedlayout.FlexLayout;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
-import com.vaadin.flow.component.textfield.IntegerField; 
-import com.vaadin.flow.component.textfield.TextField;
 import com.vaadin.flow.component.select.Select;
+import com.vaadin.flow.component.textfield.IntegerField;
+import com.vaadin.flow.component.textfield.TextField;
+import com.vaadin.flow.component.upload.Upload;
 import com.vaadin.flow.data.value.ValueChangeMode;
 import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
-import com.vaadin.flow.component.upload.Upload;
-import com.vaadin.flow.server.streams.UploadHandler;
 import com.vaadin.flow.server.streams.DownloadHandler;
-import java.io.File;
-import java.io.FileOutputStream;
-import com.vaadin.flow.component.details.Details;
+import com.vaadin.flow.server.streams.UploadHandler;
 
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Akatsuki Media - Mi Colección")
@@ -38,24 +36,25 @@ public class MainView extends VerticalLayout {
     public FlexLayout contenedorTarjetas = new FlexLayout();
     public TextField txtBuscar = new TextField();
     public Select<TipoMultimedia> filtroTipo = new Select<>();
+
+    // Formulario (es el mismo para crear y para editar)
     public Dialog dialogFormulario = new Dialog();
     public TextField txtTitulo = new TextField("Título");
     public ComboBox<TipoMultimedia> cbTipo = new ComboBox<>("Tipo");
-    public TextField txtGenero = new TextField("Género");
+    public ComboBox<String> cbGenero = new ComboBox<>("Género");
     public IntegerField txtAnio = new IntegerField("Año");
     public TextField txtCreador = new TextField("Creador (Director/Artista)");
     public Estrellas ratingCalificacion = new Estrellas();
     public ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
     public Upload uploadPortada;
-    public String[] nombreArchivoSubido = new String[]{ "default_elemento.png" };
+    public String[] nombreArchivoSubido = new String[]{ funciones.PORTADA_ELEMENTO };
     public byte[][] bytesImagenSubida = new byte[1][];
 
+    // Si es null se está creando un elemento, si tiene un id se está editando ese elemento
     public String idEditando = null;
-    public String imagenActual = "default_elemento.png";
-    
+    public String imagenActual = funciones.PORTADA_ELEMENTO;
 
     public MainView() {
-        setClassName("main-view");
         setSizeFull();
         getStyle().set("background-color", "#000000");
 
@@ -64,24 +63,32 @@ public class MainView extends VerticalLayout {
         contenedorTarjetas.getStyle().set("gap", "20px");
         contenedorTarjetas.getStyle().set("align-items", "flex-start");
 
+        // Buscador y filtro por tipo
         txtBuscar.setPlaceholder("Buscar por título, género, creador o año...");
         txtBuscar.setMaxWidth("600px");
         txtBuscar.setWidthFull();
         txtBuscar.setClearButtonVisible(true);
         txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
-        txtBuscar.addValueChangeListener(e -> cargarTarjetas(e.getValue()));
+        txtBuscar.addValueChangeListener(e -> cargarTarjetas());
+
         filtroTipo.setItems(TipoMultimedia.values());
         filtroTipo.setPlaceholder("Todos los tipos");
         filtroTipo.setEmptySelectionAllowed(true);
         filtroTipo.setEmptySelectionCaption("Todos los tipos");
-        filtroTipo.addValueChangeListener(e -> cargarTarjetas(txtBuscar.getValue()));
         filtroTipo.setWidth("200px");
         filtroTipo.getStyle().set("background-color", "#2a2a2a");
         filtroTipo.getStyle().set("border-radius", "8px");
+        filtroTipo.addValueChangeListener(e -> cargarTarjetas());
 
-        dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
+        // Campos del formulario
         cbTipo.setItems(TipoMultimedia.values());
+        cbEstado.setItems(EstadoMultimedia.values());
         
+        // Sugiere los géneros que ya existen, pero deja escribir uno nuevo
+        cbGenero.setAllowCustomValue(true);
+        cbGenero.setPlaceholder("Elige uno o escribe uno nuevo");
+        cbGenero.addCustomValueSetListener(e -> cbGenero.setValue(e.getDetail().trim()));
+
         Span lblCalificacion = new Span("Calificación");
         lblCalificacion.getStyle().set("font-size", "var(--lumo-font-size-s)");
         lblCalificacion.getStyle().set("color", "var(--lumo-secondary-text-color)");
@@ -90,8 +97,6 @@ public class MainView extends VerticalLayout {
         VerticalLayout campoCalificacion = new VerticalLayout(lblCalificacion, ratingCalificacion);
         campoCalificacion.setPadding(false);
         campoCalificacion.setSpacing(false);
-        
-        cbEstado.setItems(EstadoMultimedia.values());
 
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
             nombreArchivoSubido[0] = metadata.fileName();
@@ -99,121 +104,36 @@ public class MainView extends VerticalLayout {
         });
 
         uploadPortada = new Upload(handlerImagen);
-        
-        String[] extensionesPermitidas = new String[]{ ".jpg", ".jpeg", ".png" };
-        uploadPortada.setAcceptedFileExtensions(extensionesPermitidas);
+        uploadPortada.setAcceptedFileExtensions(".jpg", ".jpeg", ".png");
         uploadPortada.setMaxFileSize(2 * 1024 * 1024);
         uploadPortada.setMaxFiles(1);
 
-        Button btnGuardar = new Button("Guardar", event -> {
-
-            if (txtTitulo.isEmpty() || cbTipo.getValue() == null || txtGenero.isEmpty() || 
-                txtAnio.isEmpty() || txtCreador.isEmpty() || ratingCalificacion.valor == 0 || cbEstado.getValue() == null) {
-                Notification.show("Por favor, completa todos los campos del formulario.");
-                return;
-            }
-
-            int anio = txtAnio.getValue();
-            int calificacion = ratingCalificacion.valor;
-
-            if (anio < 1800 || anio > 2026) {
-                Notification.show("Por favor, ingresa un año válido.");
-                return;
-            }
-
-            String nombreImagenFinal = imagenActual;
-
-            if (bytesImagenSubida[0] != null && bytesImagenSubida[0].length > 0) {
-                try {
-                    File carpetaPortadas = new File("portadas");
-                    if (!carpetaPortadas.exists()) {
-                        carpetaPortadas.mkdirs();
-                    }
-
-                    String nombreOriginal = nombreArchivoSubido[0];
-                    nombreImagenFinal = System.currentTimeMillis() + "_" + nombreOriginal;
-
-                    File archivoDestino = new File(carpetaPortadas, nombreImagenFinal);
-                    FileOutputStream output = new FileOutputStream(archivoDestino);
-                    output.write(bytesImagenSubida[0]);
-                    output.close();
-
-                } catch (Exception ex) {
-                    Notification.show("Error al guardar el archivo de la imagen.");
-                }
-            }
-
-                        if (idEditando == null) {
-                String id = String.valueOf(System.currentTimeMillis());
-
-                ElementoMultimedia nuevo = new ElementoMultimedia(
-                    id,
-                    txtTitulo.getValue(),
-                    cbTipo.getValue(),
-                    txtGenero.getValue(),
-                    anio,
-                    txtCreador.getValue(),
-                    calificacion,
-                    cbEstado.getValue(),
-                    nombreImagenFinal
-                );
-
-                funciones.guardarElemento(nuevo);
-                Notification.show("¡Elemento guardado en el archivo!");
-
-            } else {
-                if (!nombreImagenFinal.equals(imagenActual) && !imagenActual.equals("default_elemento.png")) {
-                    File fotoVieja = new File("portadas", imagenActual);
-                    if (fotoVieja.exists()) {
-                        fotoVieja.delete();
-                    }
-                }
-
-                ElementoMultimedia editado = new ElementoMultimedia(
-                    idEditando,
-                    txtTitulo.getValue(),
-                    cbTipo.getValue(),
-                    txtGenero.getValue(),
-                    anio,
-                    txtCreador.getValue(),
-                    calificacion,
-                    cbEstado.getValue(),
-                    nombreImagenFinal
-                );
-
-                funciones.actualizarElemento(editado);
-                Notification.show("¡Elemento actualizado!");
-            }
-
-            cargarTarjetas(txtBuscar.getValue());
-            limpiarFormulario();
-            dialogFormulario.close();
-        });
+        Button btnGuardar = new Button("Guardar", event -> guardarElemento());
         btnGuardar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
-        // Botón Cancelar en estilo terciario con texto en ROJO
         Button btnCancelar = new Button("Cancelar", e -> dialogFormulario.close());
         btnCancelar.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
         btnCancelar.getStyle().set("color", "#ff4d4d");
 
         FormLayout formulario = new FormLayout();
-        formulario.add(txtTitulo, cbTipo, txtGenero, txtAnio, txtCreador, campoCalificacion, cbEstado, uploadPortada);
+        formulario.add(txtTitulo, cbTipo, cbGenero, txtAnio, txtCreador, campoCalificacion, cbEstado, uploadPortada);
         formulario.setColspan(uploadPortada, 2);
 
         dialogFormulario.add(formulario);
         dialogFormulario.getFooter().add(btnCancelar, btnGuardar);
 
+        // Barra superior
         H2 titulo = new H2("Mi Colección");
         titulo.getStyle().set("color", "#ffffff");
 
         Button btnNuevo = new Button("+ Nuevo Elemento", e -> {
-        limpiarFormulario();
-        dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
-        dialogFormulario.open();
+            limpiarFormulario();
+            dialogFormulario.setHeaderTitle("Agregar Nuevo Elemento");
+            dialogFormulario.open();
         });
         btnNuevo.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
-        HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar,filtroTipo, btnNuevo);
+        HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar, filtroTipo, btnNuevo);
         barraSuperior.setWidthFull();
         barraSuperior.setJustifyContentMode(JustifyContentMode.BETWEEN);
         barraSuperior.setAlignItems(Alignment.CENTER);
@@ -222,69 +142,106 @@ public class MainView extends VerticalLayout {
         add(barraSuperior, contenedorTarjetas);
         cargarTarjetas();
     }
+
+    public void guardarElemento() {
+        if (txtTitulo.isEmpty() || cbTipo.getValue() == null || cbGenero.isEmpty() ||
+            txtAnio.isEmpty() || txtCreador.isEmpty() || ratingCalificacion.valor == 0 || cbEstado.getValue() == null) {
+            Notification.show("Por favor, completa todos los campos del formulario.");
+            return;
+        }
+
+        int anio = txtAnio.getValue();
+        if (anio < 1800 || anio > 2026) {
+            Notification.show("Por favor, ingresa un año válido.");
+            return;
+        }
+
+        // Si no se subió una imagen nueva, se conserva la que ya tenía
+        String nombreImagen = imagenActual;
+        if (bytesImagenSubida[0] != null) {
+            nombreImagen = funciones.guardarPortada(bytesImagenSubida[0], nombreArchivoSubido[0]);
+            if (nombreImagen == null) {
+                Notification.show("Error al guardar el archivo de la imagen.");
+                return;
+            }
+        }
+
+        if (idEditando == null) {
+            String id = String.valueOf(System.currentTimeMillis());
+            ElementoMultimedia nuevo = new ElementoMultimedia(id, txtTitulo.getValue(), cbTipo.getValue(),
+                cbGenero.getValue(), anio, txtCreador.getValue(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
+
+            funciones.guardarElemento(nuevo);
+            Notification.show("¡Elemento guardado en el archivo!");
+        } else {
+            // Si se cambió la portada, la vieja se borra para no dejar imágenes sin usar
+            if (!nombreImagen.equals(imagenActual)) {
+                funciones.borrarPortada(imagenActual);
+            }
+
+            ElementoMultimedia editado = new ElementoMultimedia(idEditando, txtTitulo.getValue(), cbTipo.getValue(),
+                cbGenero.getValue(), anio, txtCreador.getValue(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
+
+            funciones.actualizarElemento(editado);
+            Notification.show("¡Elemento actualizado!");
+        }
+
+        cargarTarjetas();
+        limpiarFormulario();
+        dialogFormulario.close();
+    }
+
     public void limpiarFormulario() {
         txtTitulo.clear();
         cbTipo.clear();
-        txtGenero.clear();
+        cbGenero.clear();
         txtAnio.clear();
         txtCreador.clear();
         ratingCalificacion.limpiar();
         cbEstado.clear();
+        cbGenero.setItems(funciones.generosUnicos(funciones.leerElementos()));
         uploadPortada.clearFileList();
 
-        nombreArchivoSubido[0] = "default_elemento.png";
+        nombreArchivoSubido[0] = funciones.PORTADA_ELEMENTO;
         bytesImagenSubida[0] = null;
 
         idEditando = null;
-        imagenActual = "default_elemento.png";
-    }
-    public void cargarTarjetas() {
-        cargarTarjetas("");
+        imagenActual = funciones.PORTADA_ELEMENTO;
     }
 
-    public void cargarTarjetas(String filtro) {
+    public void cargarTarjetas() {
         contenedorTarjetas.removeAll();
 
+        String busqueda = txtBuscar.getValue().toLowerCase().trim();
         ElementoMultimedia[] elementos = funciones.leerElementos();
         int tarjetasMostradas = 0;
 
         for (int i = 0; i < elementos.length; i++) {
             ElementoMultimedia e = elementos[i];
 
-            if (e == null) {
+            // Filtro por tipo
+            if (filtroTipo.getValue() != null && e.tipo != filtroTipo.getValue()) {
                 continue;
             }
-             if (filtroTipo.getValue() != null && e.tipo != filtroTipo.getValue()) {
-                continue;
-            }
 
-            if (filtro != null && !filtro.trim().isEmpty()) {
-                String busqueda = filtro.toLowerCase().trim();
-                String tituloLower = e.titulo.toLowerCase();
-                String generoLower = e.genero.toLowerCase();
-                String creadorLower = e.creador.toLowerCase();
-                String anioStr = String.valueOf(e.anio);
-
-                // Evalúa si la búsqueda coincide con título, género, creador o año
-                boolean coincideTitulo = tituloLower.contains(busqueda);
-                boolean coincideGenero = generoLower.contains(busqueda);
-                boolean coincideCreador = creadorLower.contains(busqueda);
-                boolean coincideAnio = anioStr.contains(busqueda);
-
-                if (!coincideTitulo && !coincideGenero && !coincideCreador && !coincideAnio) {
-                    continue; // Descarta la tarjeta si no coincide con ninguno de los 4 campos
+            // Búsqueda por título, género, creador o año
+            if (!busqueda.isEmpty()) {
+                boolean coincide = e.titulo.toLowerCase().contains(busqueda)
+                                || e.genero.toLowerCase().contains(busqueda)
+                                || e.creador.toLowerCase().contains(busqueda)
+                                || String.valueOf(e.anio).contains(busqueda);
+                if (!coincide) {
+                    continue;
                 }
             }
 
-            VerticalLayout tarjeta = crearTarjeta(e);
-            contenedorTarjetas.add(tarjeta);
+            contenedorTarjetas.add(crearTarjeta(e));
             tarjetasMostradas++;
         }
 
         if (tarjetasMostradas == 0) {
             String textoMensaje;
-
-            if (filtroTipo.getValue() != null || (filtro != null && !filtro.trim().isEmpty())) {
+            if (filtroTipo.getValue() != null || !busqueda.isEmpty()) {
                 textoMensaje = "No se encontraron resultados con esa búsqueda o filtro.";
             } else {
                 textoMensaje = "Tu colección está vacía. Agrega tu primer elemento con el botón '+ Nuevo Elemento'.";
@@ -300,23 +257,17 @@ public class MainView extends VerticalLayout {
 
     public VerticalLayout crearTarjeta(ElementoMultimedia e) {
         VerticalLayout tarjeta = new VerticalLayout();
-        tarjeta.setWidth("240px");
+        tarjeta.setWidthFull();
+        tarjeta.setMaxWidth("240px");
         tarjeta.setPadding(true);
         tarjeta.setSpacing(true);
-
         tarjeta.getStyle().set("border", "1px solid #2a2a2a");
         tarjeta.getStyle().set("border-radius", "12px");
         tarjeta.getStyle().set("background-color", "#181818");
         tarjeta.getStyle().set("box-shadow", "0 4px 10px rgba(0, 0, 0, 0.3)");
         tarjeta.getStyle().set("cursor", "pointer");
 
-        File archivo = new File("portadas", e.imagen);
-        if (!archivo.exists()) {
-            archivo = new File("portadas", "default_elemento.png");
-        }
-
-        DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
-        Image imgPortada = new Image(handlerImagen, e.titulo);
+        Image imgPortada = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo);
         imgPortada.setWidth("100%");
         imgPortada.setHeight("200px");
         imgPortada.getStyle().set("object-fit", "cover");
@@ -329,16 +280,11 @@ public class MainView extends VerticalLayout {
 
         Estrellas estrellasLectura = new Estrellas(e.calificacion, false);
 
-        
-        Details ficha = abrirFichaDetalles(e);
-        tarjeta.add(imgPortada, lblTitulo, estrellasLectura, ficha);
-
+        tarjeta.add(imgPortada, lblTitulo, estrellasLectura, crearDetalles(e));
         return tarjeta;
     }
 
-        public Details abrirFichaDetalles(ElementoMultimedia e) {
-
-        // 2. Todos los campos de información con colores para fondo oscuro
+    public Details crearDetalles(ElementoMultimedia e) {
         Span lblDetalles = new Span("Tipo: " + e.tipo + "  |  Género: " + e.genero);
         lblDetalles.getStyle().set("color", "#e0e0e0");
         lblDetalles.getStyle().set("font-size", "0.85rem");
@@ -352,87 +298,67 @@ public class MainView extends VerticalLayout {
         lblEstado.getStyle().set("color", "#ffffff");
         lblEstado.getStyle().set("font-size", "0.85rem");
 
-        // 3. Botón de eliminación integrando la función existente
+        // Editar: llena el formulario con los datos del elemento y lo abre
+        Button btnEditar = new Button("Editar", eventEdit -> {
+            limpiarFormulario();
+
+            txtTitulo.setValue(e.titulo);
+            cbTipo.setValue(e.tipo);
+            cbGenero.setValue(e.genero);
+            txtAnio.setValue(e.anio);
+            txtCreador.setValue(e.creador);
+            ratingCalificacion.cambiarPuntuacion(e.calificacion);
+            cbEstado.setValue(e.estado);
+
+            idEditando = e.id;
+            imagenActual = e.imagen;
+
+            dialogFormulario.setHeaderTitle("Editar Elemento");
+            dialogFormulario.open();
+        });
+        btnEditar.getStyle().set("color", "#ff4d4d");
+        btnEditar.getStyle().set("background-color", "#2a2a2a");
+        btnEditar.setWidthFull();
+
+        // Eliminar: pide confirmación antes de borrar
         Button btnEliminar = new Button("Eliminar", eventDel -> {
             Dialog dialogConfirmacion = new Dialog();
             dialogConfirmacion.setHeaderTitle("¿Eliminar elemento?");
 
             Span msgConfirmacion = new Span("¿Estás seguro de que deseas eliminar '" + e.titulo + "'? Esta acción no se puede deshacer.");
 
-            Button btnConfirmarEliminar = new Button("Sí, eliminar", eventSi -> {
-                if (!e.imagen.equals("default_elemento.png")) {
-                    File fotoFisica = new File("portadas", e.imagen);
-                    if (fotoFisica.exists()) {
-                        fotoFisica.delete();
-                    }
-                }
-
-                // Invocación de la función de eliminación
+            Button btnConfirmar = new Button("Sí, eliminar", eventSi -> {
                 funciones.eliminarElemento(e.id);
                 Notification.show("Elemento eliminado de tu colección.");
-
-                cargarTarjetas(txtBuscar.getValue());
+                cargarTarjetas();
                 dialogConfirmacion.close();
             });
-            btnConfirmarEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+            btnConfirmar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
             Button btnCancelarConf = new Button("Cancelar", eventNo -> dialogConfirmacion.close());
             btnCancelarConf.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
             btnCancelarConf.getStyle().set("color", "#ff4d4d");
 
             dialogConfirmacion.add(msgConfirmacion);
-            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmarEliminar);
-
+            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmar);
             dialogConfirmacion.open();
         });
         btnEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         btnEliminar.setWidthFull();
 
-        Button btnEditar = new Button("Editar", eventEdit -> {
-        limpiarFormulario();
-
-        txtTitulo.setValue(e.titulo);
-        cbTipo.setValue(e.tipo);
-        txtGenero.setValue(e.genero);
-        txtAnio.setValue(e.anio);     
-       txtCreador.setValue(e.creador);
-        ratingCalificacion.cambiarPuntuacion(e.calificacion);
-        cbEstado.setValue(e.estado);
-        idEditando = e.id;
-        imagenActual = e.imagen;
-
-        dialogFormulario.setHeaderTitle("Editar Elemento");
-        dialogFormulario.open();
-        });
-        btnEditar.getStyle().set("color", "#ff4d4d");
-        btnEditar.getStyle().set("background-color", "#2a2a2a");
-        btnEditar.setWidthFull();
-        
-        // 4. Agrupación de todos los elementos dentro del contenedor del acordeón
-        VerticalLayout layoutContenido = new VerticalLayout(
-            lblDetalles, 
-            lblCreadorAnio, 
-            lblEstado, 
-            btnEditar,
-            btnEliminar
-        );
+        VerticalLayout layoutContenido = new VerticalLayout(lblDetalles, lblCreadorAnio, lblEstado, btnEditar, btnEliminar);
         layoutContenido.setPadding(false);
         layoutContenido.setSpacing(true);
         layoutContenido.getStyle().set("margin-top", "10px");
 
-        // 5. Creación y retorno del componente Details
-       Span lblSummary = new Span("Ver detalles");
-        lblSummary.getStyle().set("color", "#ffffff"); // Texto en blanco puro (o #ff4d4d si lo quieres en rojo Akatsuki)
+        Span lblSummary = new Span("Ver detalles");
+        lblSummary.getStyle().set("color", "#ffffff");
         lblSummary.getStyle().set("font-size", "0.85rem");
         lblSummary.getStyle().set("font-weight", "500");
 
-        // 2. Pasamos el Span como primer argumento del constructor
         Details details = new Details(lblSummary, layoutContenido);
-
-        // 3. Forzamos a la flecha desplegable (>) a pintarse en blanco
         details.getElement().getStyle().set("--lumo-secondary-text-color", "#ffffff");
         details.getStyle().set("width", "100%");
-
         return details;
     }
 }

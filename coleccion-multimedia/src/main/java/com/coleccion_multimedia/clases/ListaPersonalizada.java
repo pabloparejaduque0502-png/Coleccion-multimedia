@@ -11,7 +11,7 @@ public class ListaPersonalizada {
         this.id = id;
         this.nombre = nombre;
         this.descripcion = (descripcion == null || descripcion.trim().isEmpty()) ? "Sin descripción" : descripcion;
-        this.imagen = (imagen == null || imagen.trim().isEmpty()) ? "default.png" : imagen;
+        this.imagen = (imagen == null || imagen.trim().isEmpty()) ? "default_lista.png" : imagen;
         this.idsElementos = (idsElementos == null) ? new String[0] : idsElementos;
     }
 

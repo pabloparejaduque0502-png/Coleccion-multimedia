@@ -1,3 +1,5 @@
 1|crazy story|Cancion|drill|2016|king von|5|COMPLETADO|1793146561234_king von wallpaper.jpg
 1793559485940|aa|Anime|aa|2018|aa|5|PENDIENTE|1793559485939_• 𝙂𝙤𝙟𝙤 𝙈𝙖𝙣𝙜𝙖.jpg
 1793571634545|a|Pelicula|a|2020|a|3|EN_PROCESO|1793571634542_1784837229036.png
+1793581073836|aa|Anime|drill|2020|a|4|EN_PROCESO|default_elemento.png
+1793581109054|a|Anime|reggaeton|2020|a|5|EN_PROCESO|default_elemento.png

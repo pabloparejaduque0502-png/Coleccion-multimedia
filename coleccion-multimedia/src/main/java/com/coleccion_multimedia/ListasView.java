@@ -26,33 +26,31 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.UploadHandler;
 
-import java.io.File;
-import java.io.FileOutputStream;
-
 @Route(value = "listas", layout = MainLayout.class)
 @PageTitle("Akatsuki Media - Mis Listas")
 public class ListasView extends VerticalLayout {
 
-    public FlexLayout contenedorListas = new FlexLayout();
+    public FlexLayout contenedorTarjetas = new FlexLayout();
     public TextField txtBuscar = new TextField();
 
     public ListasView() {
-        setClassName("listas-view");
         setSizeFull();
         getStyle().set("background-color", "#000000");
 
-        contenedorListas.setWidthFull();
-        contenedorListas.getStyle().set("flex-wrap", "wrap");
-        contenedorListas.getStyle().set("gap", "20px");
+        contenedorTarjetas.setWidthFull();
+        contenedorTarjetas.getStyle().set("flex-wrap", "wrap");
+        contenedorTarjetas.getStyle().set("gap", "20px");
+        contenedorTarjetas.getStyle().set("align-items", "flex-start");
 
-        // 1. Barra de búsqueda central
+        // Buscador
         txtBuscar.setPlaceholder("Buscar listas por nombre o descripción...");
-        txtBuscar.setWidth("350px");
+        txtBuscar.setMaxWidth("350px");
+        txtBuscar.setWidthFull();
         txtBuscar.setClearButtonVisible(true);
         txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
-        txtBuscar.addValueChangeListener(e -> cargarListas(e.getValue()));
+        txtBuscar.addValueChangeListener(e -> cargarTarjetas());
 
-        // 2. Diálogo formulario para crear listas
+        // Formulario
         Dialog dialogFormulario = new Dialog();
         dialogFormulario.setHeaderTitle("Crear Nueva Lista");
 
@@ -66,8 +64,8 @@ public class ListasView extends VerticalLayout {
         mcbElementos.setPlaceholder("Selecciona uno o varios elementos...");
         mcbElementos.setWidthFull();
 
-        final String[] nombreArchivoSubido = new String[]{ "default_lista.png" };
-        final byte[][] bytesImagenSubida = new byte[1][];
+        String[] nombreArchivoSubido = new String[]{ funciones.PORTADA_LISTA };
+        byte[][] bytesImagenSubida = new byte[1][];
 
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
             nombreArchivoSubido[0] = metadata.fileName();
@@ -85,46 +83,38 @@ public class ListasView extends VerticalLayout {
                 return;
             }
 
-            String nombreImagenFinal = "default_lista.png";
-
-            if (bytesImagenSubida[0] != null && bytesImagenSubida[0].length > 0) {
-                try {
-                    File carpetaPortadas = new File("portadas");
-                    if (!carpetaPortadas.exists()) {
-                        carpetaPortadas.mkdirs();
-                    }
-
-                    nombreImagenFinal = System.currentTimeMillis() + "_lista_" + nombreArchivoSubido[0];
-                    File archivoDestino = new File(carpetaPortadas, nombreImagenFinal);
-                    try (FileOutputStream output = new FileOutputStream(archivoDestino)) {
-                        output.write(bytesImagenSubida[0]);
-                    }
-                } catch (Exception ex) {
+            String nombreImagen = funciones.PORTADA_LISTA;
+            if (bytesImagenSubida[0] != null) {
+                nombreImagen = funciones.guardarPortada(bytesImagenSubida[0], nombreArchivoSubido[0]);
+                if (nombreImagen == null) {
                     Notification.show("Error al guardar la imagen de la lista.");
+                    return;
                 }
             }
 
-            Object[] seleccionados = mcbElementos.getValue().toArray();
-            String[] idsElementos = new String[seleccionados.length];
-            for (int i = 0; i < seleccionados.length; i++) {
-                idsElementos[i] = ((ElementoMultimedia) seleccionados[i]).id;
+            // Se pasan los elementos elegidos a un arreglo con sus ids
+            String[] idsElementos = new String[mcbElementos.getValue().size()];
+            int idx = 0;
+            for (ElementoMultimedia elemento : mcbElementos.getValue()) {
+                idsElementos[idx] = elemento.id;
+                idx++;
             }
 
-            String idLista = String.valueOf(System.currentTimeMillis());
-            ListaPersonalizada nuevaLista = new ListaPersonalizada(idLista, txtNombreLista.getValue(), txtDescripcion.getValue(), nombreImagenFinal, idsElementos);
+            String id = String.valueOf(System.currentTimeMillis());
+            ListaPersonalizada nueva = new ListaPersonalizada(id, txtNombreLista.getValue(), txtDescripcion.getValue(), nombreImagen, idsElementos);
 
-            funciones.guardarLista(nuevaLista);
+            funciones.guardarLista(nueva);
             Notification.show("Lista creada correctamente.");
 
             txtNombreLista.clear();
             txtDescripcion.clear();
             mcbElementos.clear();
             uploadPortada.clearFileList();
-            nombreArchivoSubido[0] = "default_lista.png";
+            nombreArchivoSubido[0] = funciones.PORTADA_LISTA;
             bytesImagenSubida[0] = null;
 
+            cargarTarjetas();
             dialogFormulario.close();
-            cargarListas(txtBuscar.getValue());
         });
         btnGuardar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
@@ -140,7 +130,7 @@ public class ListasView extends VerticalLayout {
         dialogFormulario.add(formulario);
         dialogFormulario.getFooter().add(btnCancelar, btnGuardar);
 
-        // 3. Barra superior
+        // Barra superior
         H2 titulo = new H2("Mis Listas");
         titulo.getStyle().set("color", "#ffffff");
 
@@ -153,68 +143,61 @@ public class ListasView extends VerticalLayout {
         barraSuperior.setAlignItems(Alignment.CENTER);
         barraSuperior.getStyle().set("flex-wrap", "wrap");
 
-        add(barraSuperior, contenedorListas);
-        cargarListas("");
+        add(barraSuperior, contenedorTarjetas);
+        cargarTarjetas();
     }
 
-    // 4. Carga y filtrado reactivo desde listas.txt
-    public void cargarListas(String filtro) {
-        contenedorListas.removeAll();
+    public void cargarTarjetas() {
+        contenedorTarjetas.removeAll();
 
+        String busqueda = txtBuscar.getValue().toLowerCase().trim();
         ListaPersonalizada[] listas = funciones.leerListas();
-        int listasMostradas = 0;
+        int tarjetasMostradas = 0;
 
         for (int i = 0; i < listas.length; i++) {
             ListaPersonalizada l = listas[i];
-            if (l == null) continue;
 
-            if (filtro != null && !filtro.trim().isEmpty()) {
-                String busqueda = filtro.toLowerCase().trim();
-                boolean coincideNombre = l.nombre.toLowerCase().contains(busqueda);
-                boolean coincideDesc = l.descripcion.toLowerCase().contains(busqueda);
-
-                if (!coincideNombre && !coincideDesc) {
+            // Búsqueda por nombre o descripción
+            if (!busqueda.isEmpty()) {
+                boolean coincide = l.nombre.toLowerCase().contains(busqueda)
+                                || l.descripcion.toLowerCase().contains(busqueda);
+                if (!coincide) {
                     continue;
                 }
             }
 
-            VerticalLayout tarjeta = crearTarjetaLista(l);
-            contenedorListas.add(tarjeta);
-            listasMostradas++;
+            contenedorTarjetas.add(crearTarjeta(l));
+            tarjetasMostradas++;
         }
 
-        if (listasMostradas == 0) {
-            String textoMensaje = (filtro != null && !filtro.trim().isEmpty())
-                ? "No se encontraron listas que coincidan con '" + filtro + "'."
-                : "Aún no has creado ninguna lista personalizada. Utiliza el botón '+ Nueva Lista'.";
+        if (tarjetasMostradas == 0) {
+            String textoMensaje;
+            if (!busqueda.isEmpty()) {
+                textoMensaje = "No se encontraron listas que coincidan con '" + txtBuscar.getValue() + "'.";
+            } else {
+                textoMensaje = "Aún no has creado ninguna lista personalizada. Utiliza el botón '+ Nueva Lista'.";
+            }
 
             Span msgVacio = new Span(textoMensaje);
             msgVacio.getStyle().set("color", "#aaaaaa");
             msgVacio.getStyle().set("font-style", "italic");
             msgVacio.getStyle().set("padding", "20px");
-            contenedorListas.add(msgVacio);
+            contenedorTarjetas.add(msgVacio);
         }
     }
 
-    // 5. Fábrica de tarjetas con visualización de portada física
-    public VerticalLayout crearTarjetaLista(ListaPersonalizada l) {
+    public VerticalLayout crearTarjeta(ListaPersonalizada l) {
         VerticalLayout tarjeta = new VerticalLayout();
-        tarjeta.setWidth("320px");
+        tarjeta.setWidthFull();
+        tarjeta.setMaxWidth("320px");
         tarjeta.setPadding(true);
         tarjeta.setSpacing(true);
-
         tarjeta.getStyle().set("border", "1px solid #2a2a2a");
         tarjeta.getStyle().set("border-radius", "12px");
         tarjeta.getStyle().set("background-color", "#181818");
         tarjeta.getStyle().set("box-shadow", "0 4px 10px rgba(0, 0, 0, 0.3)");
 
-        File archivo = new File("portadas", l.imagen);
-        if (!archivo.exists()) {
-            archivo = new File("portadas", "default_lista.png");
-        }
-
-        DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
-        Image imgPortada = new Image(handlerImagen, l.nombre);
+        Image imgPortada = new Image(DownloadHandler.forFile(funciones.archivoPortada(l.imagen, funciones.PORTADA_LISTA)), l.nombre);
         imgPortada.setWidth("100%");
         imgPortada.setHeight("160px");
         imgPortada.getStyle().set("object-fit", "cover");
@@ -229,126 +212,96 @@ public class ListasView extends VerticalLayout {
         lblDesc.getStyle().set("color", "#aaaaaa");
         lblDesc.getStyle().set("font-size", "0.85rem");
 
-        Details detallesLista = crearDetallesLista(l);
-
-        tarjeta.add(imgPortada, lblNombre, lblDesc, detallesLista);
-
+        tarjeta.add(imgPortada, lblNombre, lblDesc, crearDetalles(l));
         return tarjeta;
     }
 
-    // 6. Contenido del acordeón Details con ítems incluidos y acciones en listas.txt
-    public Details crearDetallesLista(ListaPersonalizada l) {
-        VerticalLayout contenidoElementos = new VerticalLayout();
-        contenidoElementos.setPadding(false);
-        contenidoElementos.setSpacing(true);
-        contenidoElementos.getStyle().set("margin-top", "10px");
+    public Details crearDetalles(ListaPersonalizada l) {
+        VerticalLayout layoutContenido = new VerticalLayout();
+        layoutContenido.setPadding(false);
+        layoutContenido.setSpacing(true);
+        layoutContenido.getStyle().set("margin-top", "10px");
 
-        // Sección A: Renderizado de los elementos guardados con diálogo de confirmación para quitar cada uno
+        // Elementos que tiene la lista, cada uno con su botón para quitarlo
         Span lblTituloContenido = new Span("Contenido de la lista (" + l.idsElementos.length + "):");
         lblTituloContenido.getStyle().set("color", "#ffffff");
         lblTituloContenido.getStyle().set("font-weight", "bold");
         lblTituloContenido.getStyle().set("font-size", "0.85rem");
-        contenidoElementos.add(lblTituloContenido);
+        layoutContenido.add(lblTituloContenido);
 
         if (l.idsElementos.length == 0) {
             Span lblVacio = new Span("Esta lista no tiene elementos asignados.");
             lblVacio.getStyle().set("color", "#888888");
             lblVacio.getStyle().set("font-style", "italic");
             lblVacio.getStyle().set("font-size", "0.8rem");
-            contenidoElementos.add(lblVacio);
-        } else {
-            for (int i = 0; i < l.idsElementos.length; i++) {
-                String idElem = l.idsElementos[i];
-                ElementoMultimedia elem = funciones.buscarElementoPorId(idElem);
-
-                if (elem != null) {
-                    Span lblItem = new Span("• " + elem.titulo + " (" + elem.tipo + ")");
-                    lblItem.getStyle().set("color", "#cccccc");
-                    lblItem.getStyle().set("font-size", "0.85rem");
-
-                    // Botón "✕" con diálogo de confirmación
-                    Button btnQuitarItem = new Button("✕", eventQuitar -> {
-                        Dialog dialogConfirmacion = new Dialog();
-                        dialogConfirmacion.setHeaderTitle("¿Quitar elemento de la lista?");
-
-                        Span msgConfirmacion = new Span("¿Estás seguro de que deseas quitar '" + elem.titulo + "' de la lista '" + l.nombre + "'?");
-
-                        Button btnConfirmarQuitar = new Button("Sí, quitar", eventSi -> {
-                            // 1. Reconstrucción del arreglo excluyendo el ID seleccionado
-                            String[] nuevosIds = new String[l.idsElementos.length - 1];
-                            int idx = 0;
-                            for (int j = 0; j < l.idsElementos.length; j++) {
-                                if (!l.idsElementos[j].equals(elem.id)) {
-                                    nuevosIds[idx] = l.idsElementos[j];
-                                    idx++;
-                                }
-                            }
-                            l.idsElementos = nuevosIds;
-
-                            // 2. Persistir el cambio en listas.txt y recargar la pantalla
-                            funciones.actualizarLista(l);
-                            Notification.show("'" + elem.titulo + "' fue eliminado de '" + l.nombre + "'.");
-                            cargarListas(txtBuscar.getValue());
-                            dialogConfirmacion.close();
-                        });
-                        btnConfirmarQuitar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
-
-                        Button btnCancelarConf = new Button("Cancelar", eventNo -> dialogConfirmacion.close());
-                        btnCancelarConf.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
-                        btnCancelarConf.getStyle().set("color", "#ff4d4d");
-
-                        dialogConfirmacion.add(msgConfirmacion);
-                        dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmarQuitar);
-                        dialogConfirmacion.open();
-                    });
-                    btnQuitarItem.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
-                    btnQuitarItem.getStyle().set("color", "#ff4d4d");
-                    btnQuitarItem.getStyle().set("padding", "0 6px");
-                    btnQuitarItem.getStyle().set("min-width", "auto");
-                    btnQuitarItem.getStyle().set("height", "24px");
-
-                    HorizontalLayout filaItem = new HorizontalLayout(lblItem, btnQuitarItem);
-                    filaItem.setWidthFull();
-                    filaItem.setJustifyContentMode(JustifyContentMode.BETWEEN);
-                    filaItem.setAlignItems(Alignment.CENTER);
-
-                    contenidoElementos.add(filaItem);
-                }
-            }
+            layoutContenido.add(lblVacio);
         }
 
-        // Sección B: Agregar nuevos elementos a la lista dinámicamente con MultiSelectComboBox
-        MultiSelectComboBox<ElementoMultimedia> mcbAgregarElementos = new MultiSelectComboBox<>("Añadir elementos a esta lista");
-        mcbAgregarElementos.setItems(funciones.leerElementos());
-        mcbAgregarElementos.setItemLabelGenerator(e -> e.titulo + " (" + e.tipo + ")");
-        mcbAgregarElementos.setPlaceholder("Selecciona uno o varios elementos...");
-        mcbAgregarElementos.setWidthFull();
+        for (int i = 0; i < l.idsElementos.length; i++) {
+            ElementoMultimedia elem = funciones.buscarElementoPorId(l.idsElementos[i]);
+            if (elem == null) {
+                continue;
+            }
+
+            Span lblItem = new Span("• " + elem.titulo + " (" + elem.tipo + ")");
+            lblItem.getStyle().set("color", "#cccccc");
+            lblItem.getStyle().set("font-size", "0.85rem");
+
+            Button btnQuitar = new Button("✕", eventQuitar -> {
+                Dialog dialogConfirmacion = new Dialog();
+                dialogConfirmacion.setHeaderTitle("¿Quitar elemento de la lista?");
+
+                Span msgConfirmacion = new Span("¿Estás seguro de que deseas quitar '" + elem.titulo + "' de la lista '" + l.nombre + "'?");
+
+                Button btnConfirmar = new Button("Sí, quitar", eventSi -> {
+                    funciones.quitarDeLista(l, elem.id);
+                    funciones.actualizarLista(l);
+                    Notification.show("'" + elem.titulo + "' fue eliminado de '" + l.nombre + "'.");
+                    cargarTarjetas();
+                    dialogConfirmacion.close();
+                });
+                btnConfirmar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+
+                Button btnCancelarConf = new Button("Cancelar", eventNo -> dialogConfirmacion.close());
+                btnCancelarConf.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
+                btnCancelarConf.getStyle().set("color", "#ff4d4d");
+
+                dialogConfirmacion.add(msgConfirmacion);
+                dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmar);
+                dialogConfirmacion.open();
+            });
+            btnQuitar.addThemeVariants(ButtonVariant.LUMO_TERTIARY, ButtonVariant.LUMO_ERROR);
+            btnQuitar.getStyle().set("color", "#ff4d4d");
+            btnQuitar.getStyle().set("padding", "0 6px");
+            btnQuitar.getStyle().set("min-width", "auto");
+            btnQuitar.getStyle().set("height", "24px");
+
+            HorizontalLayout filaItem = new HorizontalLayout(lblItem, btnQuitar);
+            filaItem.setWidthFull();
+            filaItem.setJustifyContentMode(JustifyContentMode.BETWEEN);
+            filaItem.setAlignItems(Alignment.CENTER);
+            layoutContenido.add(filaItem);
+        }
+
+        // Añadir más elementos a la lista
+        MultiSelectComboBox<ElementoMultimedia> mcbAgregar = new MultiSelectComboBox<>("Añadir elementos a esta lista");
+        mcbAgregar.setItems(funciones.leerElementos());
+        mcbAgregar.setItemLabelGenerator(e -> e.titulo + " (" + e.tipo + ")");
+        mcbAgregar.setPlaceholder("Selecciona uno o varios elementos...");
+        mcbAgregar.setWidthFull();
 
         Button btnAgregar = new Button("+ Añadir", event -> {
-            if (mcbAgregarElementos.isEmpty()) {
+            if (mcbAgregar.isEmpty()) {
                 Notification.show("Selecciona al menos un elemento.");
                 return;
             }
 
-            Object[] seleccionados = mcbAgregarElementos.getValue().toArray();
-            
-            // 1. Filtrar elementos duplicados (los que ya pertenezcan a la lista)
+            // Primero se guardan solo los ids que todavía no están en la lista
+            String[] idsNuevos = new String[mcbAgregar.getValue().size()];
             int cantidadNuevos = 0;
-            ElementoMultimedia[] elementosNuevos = new ElementoMultimedia[seleccionados.length];
-
-            for (int i = 0; i < seleccionados.length; i++) {
-                ElementoMultimedia elem = (ElementoMultimedia) seleccionados[i];
-                boolean yaExiste = false;
-
-                for (int j = 0; j < l.idsElementos.length; j++) {
-                    if (l.idsElementos[j].equals(elem.id)) {
-                        yaExiste = true;
-                        break;
-                    }
-                }
-
-                if (!yaExiste) {
-                    elementosNuevos[cantidadNuevos] = elem;
+            for (ElementoMultimedia elemento : mcbAgregar.getValue()) {
+                if (!funciones.listaContiene(l, elemento.id)) {
+                    idsNuevos[cantidadNuevos] = elemento.id;
                     cantidadNuevos++;
                 }
             }
@@ -358,76 +311,62 @@ public class ListasView extends VerticalLayout {
                 return;
             }
 
-            // 2. Redimensionamiento del arreglo estático para añadir todos los nuevos IDs
-            String[] nuevosIds = new String[l.idsElementos.length + cantidadNuevos];
-            
-            // Copiar IDs previos
+            // Como los arreglos tienen tamaño fijo, se crea uno más grande con los viejos y los nuevos
+            String[] todosLosIds = new String[l.idsElementos.length + cantidadNuevos];
             for (int i = 0; i < l.idsElementos.length; i++) {
-                nuevosIds[i] = l.idsElementos[i];
+                todosLosIds[i] = l.idsElementos[i];
             }
-            
-            // Agregar los nuevos IDs filtrados al final
             for (int i = 0; i < cantidadNuevos; i++) {
-                nuevosIds[l.idsElementos.length + i] = elementosNuevos[i].id;
+                todosLosIds[l.idsElementos.length + i] = idsNuevos[i];
             }
+            l.idsElementos = todosLosIds;
 
-            l.idsElementos = nuevosIds;
-
-            // 3. Persistir cambios en listas.txt y recargar pantalla
             funciones.actualizarLista(l);
             Notification.show(cantidadNuevos + " elemento(s) añadido(s) a '" + l.nombre + "'.");
-            cargarListas(txtBuscar.getValue());
+            cargarTarjetas();
         });
         btnAgregar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
-        HorizontalLayout barraAgregar = new HorizontalLayout(mcbAgregarElementos, btnAgregar);
+        HorizontalLayout barraAgregar = new HorizontalLayout(mcbAgregar, btnAgregar);
         barraAgregar.setWidthFull();
         barraAgregar.setAlignItems(Alignment.BASELINE);
 
-        // Sección C: Eliminación de la lista completa
-        Button btnEliminarLista = new Button("Eliminar Lista", eventDel -> {
+        // Eliminar la lista completa
+        Button btnEliminar = new Button("Eliminar Lista", eventDel -> {
             Dialog dialogConfirmacion = new Dialog();
             dialogConfirmacion.setHeaderTitle("¿Eliminar lista?");
 
             Span msgConfirmacion = new Span("¿Estás seguro de que deseas eliminar '" + l.nombre + "'?");
 
-            Button btnConfirmarEliminar = new Button("Sí, eliminar", eventSi -> {
-                if (!l.imagen.equals("default_lista.png")) {
-                    File fotoFisica = new File("portadas", l.imagen);
-                    if (fotoFisica.exists()) {
-                        fotoFisica.delete();
-                    }
-                }
-
+            Button btnConfirmar = new Button("Sí, eliminar", eventSi -> {
                 funciones.eliminarLista(l.id);
                 Notification.show("Lista eliminada correctamente.");
-                cargarListas(txtBuscar.getValue());
+                cargarTarjetas();
                 dialogConfirmacion.close();
             });
-            btnConfirmarEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+            btnConfirmar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
             Button btnCancelarConf = new Button("Cancelar", eventNo -> dialogConfirmacion.close());
             btnCancelarConf.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
             btnCancelarConf.getStyle().set("color", "#ff4d4d");
 
             dialogConfirmacion.add(msgConfirmacion);
-            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmarEliminar);
+            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmar);
             dialogConfirmacion.open();
         });
-        btnEliminarLista.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
-        btnEliminarLista.setWidthFull();
+        btnEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+        btnEliminar.setWidthFull();
 
-        contenidoElementos.add(barraAgregar, btnEliminarLista);
+        layoutContenido.add(barraAgregar, btnEliminar);
 
         Span lblSummary = new Span("Ver contenido de la lista");
         lblSummary.getStyle().set("color", "#ffffff");
         lblSummary.getStyle().set("font-size", "0.85rem");
         lblSummary.getStyle().set("font-weight", "500");
 
-        Details details = new Details(lblSummary, contenidoElementos);
+        Details details = new Details(lblSummary, layoutContenido);
         details.getElement().getStyle().set("--lumo-secondary-text-color", "#ffffff");
         details.getStyle().set("width", "100%");
-
         return details;
     }
 }

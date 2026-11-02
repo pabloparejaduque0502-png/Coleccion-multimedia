@@ -24,7 +24,6 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 
-import java.io.File;
 import java.time.LocalDate;
 
 @Route(value = "prestamos", layout = MainLayout.class)
@@ -35,75 +34,72 @@ public class PrestamosView extends VerticalLayout {
     public TextField txtBuscar = new TextField();
 
     public PrestamosView() {
-        setClassName("prestamos-view");
         setSizeFull();
         getStyle().set("background-color", "#000000");
 
         contenedorTarjetas.setWidthFull();
         contenedorTarjetas.getStyle().set("flex-wrap", "wrap");
         contenedorTarjetas.getStyle().set("gap", "20px");
+        contenedorTarjetas.getStyle().set("align-items", "flex-start");
 
+        // Buscador
         txtBuscar.setPlaceholder("Buscar por elemento, prestado a...");
-        txtBuscar.setWidth("350px");
+        txtBuscar.setMaxWidth("350px");
+        txtBuscar.setWidthFull();
         txtBuscar.setClearButtonVisible(true);
         txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
-        txtBuscar.addValueChangeListener(e -> cargarTarjetasPrestamo(e.getValue()));
+        txtBuscar.addValueChangeListener(e -> cargarTarjetas());
 
+        // Formulario
         Dialog dialogFormulario = new Dialog();
         dialogFormulario.setHeaderTitle("Registrar Nuevo Préstamo");
 
-        // 1. Leer los elementos multimedia almacenados en el archivo plano
-        ElementoMultimedia[] elementosDisponibles = funciones.leerElementos();
         ComboBox<ElementoMultimedia> cbElemento = new ComboBox<>("Elemento Multimedia");
-        cbElemento.setItems(elementosDisponibles);
+        cbElemento.setItems(funciones.leerElementos());
         cbElemento.setItemLabelGenerator(e -> e.titulo + " (" + e.tipo + ")");
         cbElemento.setWidthFull();
+
         TextField txtPrestadoA = new TextField("Prestado a (Persona)");
 
-        // 1. Componentes DatePicker para manejo de fechas
         DatePicker dpFechaPrestamo = new DatePicker("Fecha de préstamo");
-        dpFechaPrestamo.setValue(LocalDate.now()); // Valor por defecto: fecha actual
+        dpFechaPrestamo.setValue(LocalDate.now());
 
         DatePicker dpFechaDevolucion = new DatePicker("Fecha acordada de devolución (Opcional)");
 
         Button btnGuardar = new Button("Guardar", event -> {
-    if (cbElemento.isEmpty() || txtPrestadoA.isEmpty() || dpFechaPrestamo.isEmpty()) {
-        Notification.show("Por favor, completa los campos obligatorios.");
-        return;
-    }
-    if (estaPrestado(cbElemento.getValue().id)) {
-    Notification.show("Este elemento ya se encuentra prestado actualmente.");
-    return;
-    }   
-    if (dpFechaDevolucion.getValue() != null && dpFechaDevolucion.getValue().isBefore(dpFechaPrestamo.getValue())) {
-    Notification.show("La fecha de devolución no puede ser anterior a la fecha de préstamo.");
-    return;
-    }
-    
+            if (cbElemento.isEmpty() || txtPrestadoA.isEmpty() || dpFechaPrestamo.isEmpty()) {
+                Notification.show("Por favor, completa los campos obligatorios.");
+                return;
+            }
+            if (funciones.estaPrestado(cbElemento.getValue().id)) {
+                Notification.show("Este elemento ya se encuentra prestado actualmente.");
+                return;
+            }
+            if (dpFechaDevolucion.getValue() != null && dpFechaDevolucion.getValue().isBefore(dpFechaPrestamo.getValue())) {
+                Notification.show("La fecha de devolución no puede ser anterior a la fecha de préstamo.");
+                return;
+            }
 
-        // 1. Generar ID único para el préstamo basado en timestamp
-        String idPrestamo = String.valueOf(System.currentTimeMillis());
-        String idElemento = cbElemento.getValue().id;
-        String persona = txtPrestadoA.getValue().trim();
-        String fechaPrestamo = dpFechaPrestamo.getValue().toString();
-        LocalDate fechaDev = dpFechaDevolucion.getValue();
-        String fechaDevolucionStr = (fechaDev != null) ? fechaDev.toString() : "Sin fecha";
+            String id = String.valueOf(System.currentTimeMillis());
+            String fechaDevolucion = "Sin fecha";
+            if (dpFechaDevolucion.getValue() != null) {
+                fechaDevolucion = dpFechaDevolucion.getValue().toString();
+            }
 
-        // 2. Instanciar y guardar en prestamos.txt
-        Prestamo nuevoPrestamo = new Prestamo(idPrestamo, idElemento, persona, fechaPrestamo, fechaDevolucionStr);
-        funciones.guardarPrestamo(nuevoPrestamo);
+            Prestamo nuevo = new Prestamo(id, cbElemento.getValue().id, txtPrestadoA.getValue().trim(),
+                dpFechaPrestamo.getValue().toString(), fechaDevolucion);
 
-        Notification.show("Préstamo registrado correctamente.");
+            funciones.guardarPrestamo(nuevo);
+            Notification.show("Préstamo registrado correctamente.");
 
-        // 3. Limpiar campos y refrescar interfaz
-        cbElemento.clear();
-        txtPrestadoA.clear();
-        dpFechaPrestamo.setValue(LocalDate.now());
-        dpFechaDevolucion.clear();
-        dialogFormulario.close();
+            cbElemento.clear();
+            txtPrestadoA.clear();
+            dpFechaPrestamo.setValue(LocalDate.now());
+            dpFechaDevolucion.clear();
 
-        cargarTarjetasPrestamo(txtBuscar.getValue());
-    });
+            cargarTarjetas();
+            dialogFormulario.close();
+        });
         btnGuardar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
         Button btnCancelar = new Button("Cancelar", e -> dialogFormulario.close());
@@ -116,6 +112,7 @@ public class PrestamosView extends VerticalLayout {
         dialogFormulario.add(formulario);
         dialogFormulario.getFooter().add(btnCancelar, btnGuardar);
 
+        // Barra superior
         H2 titulo = new H2("Préstamos");
         titulo.getStyle().set("color", "#ffffff");
 
@@ -129,46 +126,45 @@ public class PrestamosView extends VerticalLayout {
         barraSuperior.getStyle().set("flex-wrap", "wrap");
 
         add(barraSuperior, contenedorTarjetas);
-        cargarTarjetasPrestamo("");
+        cargarTarjetas();
     }
 
-        public void cargarTarjetasPrestamo(String filtro) {
+    public void cargarTarjetas() {
         contenedorTarjetas.removeAll();
 
-        // 1. Leer préstamos reales desde el archivo plano
+        String busqueda = txtBuscar.getValue().toLowerCase().trim();
         Prestamo[] prestamos = funciones.leerPrestamos();
         int tarjetasMostradas = 0;
 
         for (int i = 0; i < prestamos.length; i++) {
             Prestamo p = prestamos[i];
-            if (p == null) continue;
 
-            // 2. Vincular el préstamo con su ElementoMultimedia
-            ElementoMultimedia elemento = funciones.buscarElementoPorId(p.idElemento);
-            if (elemento == null) continue; // Si el elemento original fue eliminado, se omite
+            // El préstamo solo guarda el id del elemento, así que se busca para tener su título y portada
+            ElementoMultimedia e = funciones.buscarElementoPorId(p.idElemento);
+            if (e == null) {
+                continue;
+            }
 
-            // 3. Filtrar por título del elemento o por nombre de la persona
-            if (filtro != null && !filtro.trim().isEmpty()) {
-                String busqueda = filtro.toLowerCase().trim();
-                String tituloLower = elemento.titulo.toLowerCase();
-                String personaLower = p.persona.toLowerCase();
-
-                if (!tituloLower.contains(busqueda) && !personaLower.contains(busqueda)) {
+            // Búsqueda por título del elemento o por la persona
+            if (!busqueda.isEmpty()) {
+                boolean coincide = e.titulo.toLowerCase().contains(busqueda)
+                                || p.persona.toLowerCase().contains(busqueda);
+                if (!coincide) {
                     continue;
                 }
             }
 
-            // 4. Crear y añadir la tarjeta a la cuadrícula
-            VerticalLayout tarjeta = crearTarjetaPrestamo(p, elemento);
-            contenedorTarjetas.add(tarjeta);
+            contenedorTarjetas.add(crearTarjeta(p, e));
             tarjetasMostradas++;
         }
 
-        // Mensaje en caso de no haber registros
         if (tarjetasMostradas == 0) {
-            String textoMensaje = (filtro != null && !filtro.trim().isEmpty())
-                ? "No se encontraron préstamos que coincidan con '" + filtro + "'."
-                : "No hay préstamos activos registrados actualmente.";
+            String textoMensaje;
+            if (!busqueda.isEmpty()) {
+                textoMensaje = "No se encontraron préstamos que coincidan con '" + txtBuscar.getValue() + "'.";
+            } else {
+                textoMensaje = "No hay préstamos activos registrados actualmente.";
+            }
 
             Span msgVacio = new Span(textoMensaje);
             msgVacio.getStyle().set("color", "#aaaaaa");
@@ -177,24 +173,19 @@ public class PrestamosView extends VerticalLayout {
             contenedorTarjetas.add(msgVacio);
         }
     }
-    public VerticalLayout crearTarjetaPrestamo(Prestamo p, ElementoMultimedia e) {
+
+    public VerticalLayout crearTarjeta(Prestamo p, ElementoMultimedia e) {
         VerticalLayout tarjeta = new VerticalLayout();
-        tarjeta.setWidth("240px");
+        tarjeta.setWidthFull();
+        tarjeta.setMaxWidth("240px");
         tarjeta.setPadding(true);
         tarjeta.setSpacing(true);
-
         tarjeta.getStyle().set("border", "1px solid #2a2a2a");
         tarjeta.getStyle().set("border-radius", "12px");
         tarjeta.getStyle().set("background-color", "#181818");
         tarjeta.getStyle().set("box-shadow", "0 4px 10px rgba(0, 0, 0, 0.3)");
 
-        File archivo = new File("portadas", e.imagen);
-        if (!archivo.exists()) {
-            archivo = new File("portadas", "default_elemento.png");
-        }
-
-        DownloadHandler handlerImagen = DownloadHandler.forFile(archivo);
-        Image imgPortada = new Image(handlerImagen, e.titulo);
+        Image imgPortada = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo);
         imgPortada.setWidth("100%");
         imgPortada.setHeight("200px");
         imgPortada.getStyle().set("object-fit", "cover");
@@ -205,15 +196,11 @@ public class PrestamosView extends VerticalLayout {
         lblTitulo.getStyle().set("font-size", "1rem");
         lblTitulo.getStyle().set("color", "#ffffff");
 
-        // Ficha desplegable con los datos reales del préstamo
-        Details ficha = crearDetallesPrestamo(p, e);
-
-        tarjeta.add(imgPortada, lblTitulo, ficha);
-
+        tarjeta.add(imgPortada, lblTitulo, crearDetalles(p, e));
         return tarjeta;
     }
 
-    public Details crearDetallesPrestamo(Prestamo p, ElementoMultimedia e) {
+    public Details crearDetalles(Prestamo p, ElementoMultimedia e) {
         Span lblPrestadoA = new Span("Prestado a: " + p.persona);
         lblPrestadoA.getStyle().set("color", "#e0e0e0");
         lblPrestadoA.getStyle().set("font-size", "0.85rem");
@@ -226,28 +213,27 @@ public class PrestamosView extends VerticalLayout {
         lblFechaDevolucion.getStyle().set("color", "#aaaaaa");
         lblFechaDevolucion.getStyle().set("font-size", "0.85rem");
 
-        // Botón de devolución con diálogo de confirmación
+        // Marcar devuelto: pide confirmación y borra el préstamo
         Button btnDevolver = new Button("Marcar Devuelto", eventDev -> {
             Dialog dialogConfirmacion = new Dialog();
             dialogConfirmacion.setHeaderTitle("¿Confirmar devolución?");
 
             Span msgConfirmacion = new Span("¿Deseas marcar como devuelto '" + e.titulo + "' prestado a " + p.persona + "?");
 
-            Button btnConfirmarDevolucion = new Button("Sí, marcar devuelto", eventSi -> {
-                // Elimina el préstamo de prestamos.txt y recarga las tarjetas
+            Button btnConfirmar = new Button("Sí, marcar devuelto", eventSi -> {
                 funciones.eliminarPrestamo(p.id);
                 Notification.show("Elemento devuelto e historia de préstamo actualizada.");
-                cargarTarjetasPrestamo(txtBuscar.getValue());
+                cargarTarjetas();
                 dialogConfirmacion.close();
             });
-            btnConfirmarDevolucion.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
+            btnConfirmar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
             Button btnCancelarConf = new Button("Cancelar", eventNo -> dialogConfirmacion.close());
             btnCancelarConf.addThemeVariants(ButtonVariant.LUMO_TERTIARY);
             btnCancelarConf.getStyle().set("color", "#ff4d4d");
 
             dialogConfirmacion.add(msgConfirmacion);
-            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmarDevolucion);
+            dialogConfirmacion.getFooter().add(btnCancelarConf, btnConfirmar);
             dialogConfirmacion.open();
         });
         btnDevolver.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -266,25 +252,6 @@ public class PrestamosView extends VerticalLayout {
         Details details = new Details(lblSummary, layoutContenido);
         details.getElement().getStyle().set("--lumo-secondary-text-color", "#ffffff");
         details.getStyle().set("width", "100%");
-
         return details;
     }
-    public boolean estaPrestado(String idElemento) {
-    // 1. Leer todos los préstamos registrados en el archivo plano
-    Prestamo[] prestamos = funciones.leerPrestamos();
-    
-    if (prestamos == null) {
-        return false;
-    }
-    
-    // 2. Recorrer el arreglo buscando coincidencias con el ID del elemento
-    for (int i = 0; i < prestamos.length; i++) {
-        Prestamo p = prestamos[i];
-        if (p != null && p.idElemento.equals(idElemento)) {
-            return true; // ¡Encontrado! Ya está prestado
-        }
-    }
-    
-    return false; // No se encontró ningún préstamo activo con ese ID
-}
 }
