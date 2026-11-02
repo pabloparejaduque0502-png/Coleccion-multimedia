@@ -192,6 +192,16 @@ public class funciones {
             }
         }
     }
+    // Revisa si un texto está vacío o tiene solo espacios
+    public static boolean estaVacio(String texto) {
+        return texto == null || texto.trim().isEmpty();
+    }
+
+    // En los .txt el | separa los campos y el salto de línea separa los registros.
+    // Si un texto trae alguno de los dos, la línea se dañaría al guardarla.
+    public static boolean tieneCaracterProhibido(String texto) {
+        return texto != null && (texto.contains("|") || texto.contains("\n"));
+    }
     // Devuelve los géneros sin repetir. "Drill" y "drill" cuentan como el mismo.
     public static String[] generosUnicos(ElementoMultimedia[] elementos) {
         String[] temp = new String[elementos.length];

@@ -68,8 +68,12 @@ public class PrestamosView extends VerticalLayout {
         DatePicker dpFechaDevolucion = new DatePicker("Fecha acordada de devolución (Opcional)");
 
         Button btnGuardar = new Button("Guardar", event -> {
-            if (cbElemento.isEmpty() || txtPrestadoA.isEmpty() || dpFechaPrestamo.isEmpty()) {
+                if (cbElemento.isEmpty() || funciones.estaVacio(txtPrestadoA.getValue()) || dpFechaPrestamo.isEmpty()) {
                 Notification.show("Por favor, completa los campos obligatorios.");
+                return;
+            }
+            if (funciones.tieneCaracterProhibido(txtPrestadoA.getValue())) {
+                Notification.show("El nombre no puede contener el carácter |");
                 return;
             }
             if (funciones.estaPrestado(cbElemento.getValue().id)) {

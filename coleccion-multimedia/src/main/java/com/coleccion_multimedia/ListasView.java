@@ -79,8 +79,12 @@ public class ListasView extends VerticalLayout {
         uploadPortada.setMaxFiles(1);
 
         Button btnGuardar = new Button("Guardar Lista", event -> {
-            if (txtNombreLista.isEmpty()) {
+            if (funciones.estaVacio(txtNombreLista.getValue())) {
                 Notification.show("Por favor, ingresa un nombre para la lista.");
+                return;
+            }
+            if (funciones.tieneCaracterProhibido(txtNombreLista.getValue()) || funciones.tieneCaracterProhibido(txtDescripcion.getValue())) {
+                Notification.show("El nombre y la descripción no pueden contener el carácter | ni saltos de línea.");
                 return;
             }
 
@@ -102,7 +106,7 @@ public class ListasView extends VerticalLayout {
             }
 
             String id = String.valueOf(System.currentTimeMillis());
-            ListaPersonalizada nueva = new ListaPersonalizada(id, txtNombreLista.getValue(), txtDescripcion.getValue(), nombreImagen, idsElementos);
+            ListaPersonalizada nueva = new ListaPersonalizada(id, txtNombreLista.getValue().trim(), txtDescripcion.getValue().trim(), nombreImagen, idsElementos);
 
             funciones.guardarLista(nueva);
             Notification.show("Lista creada correctamente.");

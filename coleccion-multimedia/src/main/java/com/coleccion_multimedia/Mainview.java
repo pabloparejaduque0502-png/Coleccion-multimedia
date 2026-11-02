@@ -145,9 +145,15 @@ public class MainView extends VerticalLayout {
     }
 
     public void guardarElemento() {
-        if (txtTitulo.isEmpty() || cbTipo.getValue() == null || cbGenero.isEmpty() ||
-            txtAnio.isEmpty() || txtCreador.isEmpty() || ratingCalificacion.valor == 0 || cbEstado.getValue() == null) {
+                if (funciones.estaVacio(txtTitulo.getValue()) || cbTipo.getValue() == null || funciones.estaVacio(cbGenero.getValue()) ||
+            txtAnio.isEmpty() || funciones.estaVacio(txtCreador.getValue()) || ratingCalificacion.valor == 0 || cbEstado.getValue() == null) {
             Notification.show("Por favor, completa todos los campos del formulario.");
+            return;
+        }
+
+        if (funciones.tieneCaracterProhibido(txtTitulo.getValue()) || funciones.tieneCaracterProhibido(cbGenero.getValue()) ||
+            funciones.tieneCaracterProhibido(txtCreador.getValue())) {
+            Notification.show("Los textos no pueden contener el carácter |");
             return;
         }
 
@@ -169,8 +175,8 @@ public class MainView extends VerticalLayout {
 
         if (idEditando == null) {
             String id = String.valueOf(System.currentTimeMillis());
-            ElementoMultimedia nuevo = new ElementoMultimedia(id, txtTitulo.getValue(), cbTipo.getValue(),
-                cbGenero.getValue(), anio, txtCreador.getValue(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
+            ElementoMultimedia nuevo = new ElementoMultimedia(id, txtTitulo.getValue().trim(), cbTipo.getValue(),
+                cbGenero.getValue().trim(), anio, txtCreador.getValue().trim(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
 
             funciones.guardarElemento(nuevo);
             Notification.show("¡Elemento guardado en el archivo!");
@@ -180,8 +186,8 @@ public class MainView extends VerticalLayout {
                 funciones.borrarPortada(imagenActual);
             }
 
-            ElementoMultimedia editado = new ElementoMultimedia(idEditando, txtTitulo.getValue(), cbTipo.getValue(),
-                cbGenero.getValue(), anio, txtCreador.getValue(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
+            ElementoMultimedia editado = new ElementoMultimedia(idEditando, txtTitulo.getValue().trim(), cbTipo.getValue(),
+                cbGenero.getValue().trim(), anio, txtCreador.getValue().trim(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
 
             funciones.actualizarElemento(editado);
             Notification.show("¡Elemento actualizado!");

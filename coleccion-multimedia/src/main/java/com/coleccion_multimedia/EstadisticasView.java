@@ -8,6 +8,7 @@ import com.coleccion_multimedia.clases.TipoMultimedia;
 import com.coleccion_multimedia.funciones.funciones;
 import com.coleccion_multimedia.icon.Estrellas;
 import com.vaadin.flow.component.html.H2;
+import com.vaadin.flow.component.details.Details;
 import com.vaadin.flow.component.html.H3;
 import com.vaadin.flow.component.html.H4;
 import com.vaadin.flow.component.html.Span;
@@ -209,6 +210,26 @@ public class EstadisticasView extends VerticalLayout {
 
         for (int i = 0; i < cantidadTop; i++) {
             panel.add(crearFilaConBarra(generos[i], cantidades[i], elementos.length, "#e50914"));
+        }
+        
+        // Si hay más de 3 géneros, el resto se ve al desplegar este Details
+        if (generos.length > 3) {
+            VerticalLayout restoGeneros = new VerticalLayout();
+            restoGeneros.setPadding(false);
+            restoGeneros.setSpacing(true);
+            for (int i = 3; i < generos.length; i++) {
+                restoGeneros.add(crearFilaConBarra(generos[i], cantidades[i], elementos.length, "#e50914"));
+            }
+
+            Span lblSummary = new Span("Ver todos los géneros (" + generos.length + ")");
+            lblSummary.getStyle().set("color", "#ffffff");
+            lblSummary.getStyle().set("font-size", "0.85rem");
+            lblSummary.getStyle().set("font-weight", "500");
+
+            Details detallesGeneros = new Details(lblSummary, restoGeneros);
+            detallesGeneros.getElement().getStyle().set("--lumo-secondary-text-color", "#ffffff");
+            detallesGeneros.getStyle().set("width", "100%");
+            panel.add(detallesGeneros);
         }
         return panel;
     }
