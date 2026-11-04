@@ -77,6 +77,13 @@ public class ListasView extends VerticalLayout {
         uploadPortada.setAcceptedFileExtensions(".jpg", ".jpeg", ".png");
         uploadPortada.setMaxFileSize(2 * 1024 * 1024);
         uploadPortada.setMaxFiles(1);
+        // Si se quita la imagen con la X, se olvida la imagen subida
+        uploadPortada.addFileRemovedListener(e -> {
+            nombreArchivoSubido[0] = funciones.PORTADA_LISTA;
+            bytesImagenSubida[0] = null;
+        });
+        // Si la imagen no es JPG/PNG o pesa más de 2 MB, se avisa
+        uploadPortada.addFileRejectedListener(e -> Notification.show("Solo se permiten imágenes JPG o PNG de máximo 2 MB."));
 
         Button btnGuardar = new Button("Guardar Lista", event -> {
             if (funciones.estaVacio(txtNombreLista.getValue())) {
@@ -381,6 +388,11 @@ public class ListasView extends VerticalLayout {
             uploadEditar.setAcceptedFileExtensions(".jpg", ".jpeg", ".png");
             uploadEditar.setMaxFileSize(2 * 1024 * 1024);
             uploadEditar.setMaxFiles(1);
+            uploadEditar.addFileRemovedListener(e -> {
+                nombreArchivoEditar[0] = funciones.PORTADA_LISTA;
+                bytesImagenEditar[0] = null;
+            });
+            uploadEditar.addFileRejectedListener(e -> Notification.show("Solo se permiten imágenes JPG o PNG de máximo 2 MB."));
 
             Button btnGuardarEditar = new Button("Guardar Cambios", eventGuardar -> {
                 if (funciones.estaVacio(txtNombreEditar.getValue())) {

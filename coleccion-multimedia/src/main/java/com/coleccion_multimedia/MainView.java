@@ -29,6 +29,8 @@ import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.UploadHandler;
 
+import java.time.LocalDate;
+
 @Route(value = "", layout = MainLayout.class)
 @PageTitle("Akatsuki Media - Mi Colección")
 public class MainView extends VerticalLayout {
@@ -47,8 +49,8 @@ public class MainView extends VerticalLayout {
     public Estrellas ratingCalificacion = new Estrellas();
     public ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
     public Upload uploadPortada;
-    public String[] nombreArchivoSubido = new String[]{ funciones.PORTADA_ELEMENTO };
-    public byte[][] bytesImagenSubida = new byte[1][];
+    public String nombreArchivoSubido = funciones.PORTADA_ELEMENTO;
+    public byte[] bytesImagenSubida = null;
 
     // Si es null se está creando un elemento, si tiene un id se está editando ese elemento
     public String idEditando = null;
@@ -100,14 +102,21 @@ public class MainView extends VerticalLayout {
         campoCalificacion.setSpacing(false);
 
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
-            nombreArchivoSubido[0] = metadata.fileName();
-            bytesImagenSubida[0] = data;
+            nombreArchivoSubido = metadata.fileName();
+            bytesImagenSubida = data;
         });
 
         uploadPortada = new Upload(handlerImagen);
         uploadPortada.setAcceptedFileExtensions(".jpg", ".jpeg", ".png");
         uploadPortada.setMaxFileSize(2 * 1024 * 1024);
         uploadPortada.setMaxFiles(1);
+        // Si se quita la imagen con la X, se olvida la imagen subida
+        uploadPortada.addFileRemovedListener(e -> {
+            nombreArchivoSubido = funciones.PORTADA_ELEMENTO;
+            bytesImagenSubida = null;
+        });
+        // Si la imagen no es JPG/PNG o pesa más de 2 MB, se avisa
+        uploadPortada.addFileRejectedListener(e -> Notification.show("Solo se permiten imágenes JPG o PNG de máximo 2 MB."));
 
         Button btnGuardar = new Button("Guardar", event -> guardarElemento());
         btnGuardar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
@@ -158,15 +167,16 @@ public class MainView extends VerticalLayout {
         }
 
         int anio = txtAnio.getValue();
-        if (anio < 1800 || anio > 2026) {
-            Notification.show("Por favor, ingresa un año válido.");
+        int anioActual = LocalDate.now().getYear();
+        if (anio < 1800 || anio > anioActual) {
+            Notification.show("El año debe estar entre 1800 y " + anioActual + ".");
             return;
         }
 
         // Si no se subió una imagen nueva, se conserva la que ya tenía
         String nombreImagen = imagenActual;
-        if (bytesImagenSubida[0] != null) {
-            nombreImagen = funciones.guardarPortada(bytesImagenSubida[0], nombreArchivoSubido[0]);
+        if (bytesImagenSubida != null) {
+            nombreImagen = funciones.guardarPortada(bytesImagenSubida, nombreArchivoSubido);
             if (nombreImagen == null) {
                 Notification.show("Error al guardar el archivo de la imagen.");
                 return;
@@ -209,8 +219,8 @@ public class MainView extends VerticalLayout {
         cbGenero.setItems(funciones.generosUnicos(funciones.leerElementos()));
         uploadPortada.clearFileList();
 
-        nombreArchivoSubido[0] = funciones.PORTADA_ELEMENTO;
-        bytesImagenSubida[0] = null;
+        nombreArchivoSubido = funciones.PORTADA_ELEMENTO;
+        bytesImagenSubida = null;
 
         idEditando = null;
         imagenActual = funciones.PORTADA_ELEMENTO;
