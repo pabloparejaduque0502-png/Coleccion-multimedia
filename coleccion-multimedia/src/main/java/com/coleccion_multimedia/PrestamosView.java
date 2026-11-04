@@ -287,7 +287,7 @@ public class PrestamosView extends VerticalLayout {
 
             Button btnConfirmar = new Button("Sí, marcar devuelto", eventSi -> {
                 funciones.eliminarPrestamo(p.id);
-                Notification.show("Elemento devuelto e historia de préstamo actualizada.");
+                Notification.show("Préstamo marcado como devuelto.");
                 cargarTarjetas();
                 dialogConfirmacion.close();
             });
