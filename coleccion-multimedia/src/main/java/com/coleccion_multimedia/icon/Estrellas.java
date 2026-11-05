@@ -1,7 +1,7 @@
 package com.coleccion_multimedia.icon;
-//trae la claase de icono
+//trae la claase de icono, un componente que se dibuja en pantalla y se le puede poner color, tamaño,etc
 import com.vaadin.flow.component.icon.Icon;
-//trae la lista de iconos de Vaadin
+//trae la lista de iconos de Vaadin, la cual es un enum de los iconos posibles que se pueden usar, en este caso se usa el icono de estrella
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 

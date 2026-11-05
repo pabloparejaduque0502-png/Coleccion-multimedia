@@ -20,6 +20,6 @@ public class ElementoMultimedia {
         this.creador = creador;
         this.calificacion = calificacion;
         this.estado = estado;
-        this.imagen = imagen;
+        this.imagen = (imagen == null || imagen.trim().isEmpty()) ? "default_elemento.png" : imagen;
     }
 }
