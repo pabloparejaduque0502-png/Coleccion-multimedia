@@ -86,6 +86,8 @@ public class MainView extends VerticalLayout {
         // Campos del formulario
         cbTipo.setItems(TipoMultimedia.values());
         cbEstado.setItems(EstadoMultimedia.values());
+        // El ComboBox muestra "En proceso" en vez de "EN_PROCESO"
+        cbEstado.setItemLabelGenerator(estado -> textoEstado(estado));
         
         // Sugiere los géneros que ya existen, pero deja escribir uno nuevo
         cbGenero.setAllowCustomValue(true);
@@ -206,6 +208,13 @@ public class MainView extends VerticalLayout {
         cargarTarjetas();
         limpiarFormulario();
         dialogFormulario.close();
+    }
+
+    // Convierte el estado del enum en un texto para mostrar: EN_PROCESO -> "En proceso"
+    // (el enum no puede tener espacios, por eso se guarda con _)
+    public String textoEstado(EstadoMultimedia estado) {
+        String texto = estado.name().replace("_", " ").toLowerCase();
+        return texto.substring(0, 1).toUpperCase() + texto.substring(1);
     }
 
     public void limpiarFormulario() {
@@ -331,7 +340,7 @@ public class MainView extends VerticalLayout {
         lblCreadorAnio.getStyle().set("color", "#cccccc");
         lblCreadorAnio.getStyle().set("font-size", "0.85rem");
 
-        Span lblEstado = new Span("Estado actual: " + e.estado);
+        Span lblEstado = new Span("Estado actual: " + textoEstado(e.estado));
         lblEstado.getStyle().set("font-weight", "bold");
         lblEstado.getStyle().set("color", "#ffffff");
         lblEstado.getStyle().set("font-size", "0.85rem");
