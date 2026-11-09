@@ -42,16 +42,16 @@ public class EstadisticasView extends VerticalLayout {
         contenedorPaneles.getStyle().set("flex-wrap", "wrap");
         contenedorPaneles.getStyle().set("gap", "20px");
         contenedorPaneles.getStyle().set("margin-top", "10px");
-        // Columna derecha: Estado arriba y Género debajo, para llenar el espacio que deja Tipo
+    
         VerticalLayout panelEstados = crearPanelPorEstado(elementos);
-        panelEstados.getStyle().set("flex", "none");
+        panelEstados.getStyle().set("flex", "none");  //hace que mantenga su tamaño natural
 
         VerticalLayout columnaDerecha = new VerticalLayout(panelEstados, crearPanelPorGenero(elementos));
         columnaDerecha.setPadding(false);
         columnaDerecha.setSpacing(false);
         columnaDerecha.getStyle().set("gap", "20px");
-        columnaDerecha.getStyle().set("flex", "1");
-        columnaDerecha.getStyle().set("min-width", "min(300px, 100%)");
+        columnaDerecha.getStyle().set("flex", "1"); //hace que se reparta el espacio con la columna izquierda de forma igual ya que ambos tienen 1
+        columnaDerecha.getStyle().set("min-width", "min(300px, 100%)"); //ancho minimo que se adapta a celulares
 
         contenedorPaneles.add(crearPanelPorTipo(elementos), columnaDerecha);
 
@@ -68,6 +68,7 @@ public class EstadisticasView extends VerticalLayout {
         barra.getStyle().set("gap", "15px");
         barra.getStyle().set("flex-wrap", "wrap");
 
+        //promedio de calificacion
         double sumaCalificaciones = 0;
         for (int i = 0; i < elementos.length; i++) {
             sumaCalificaciones += elementos[i].calificacion;
@@ -78,7 +79,7 @@ public class EstadisticasView extends VerticalLayout {
         if (elementos.length > 0) {
             promedio = sumaCalificaciones / elementos.length;
         }
-
+        //le añadimos a la barra 4 tarjetas de estadisticas
         barra.add(
             crearTarjetaEst("Total Colección", String.valueOf(elementos.length), "#e50914"),
             crearTarjetaEst("Préstamos Activos", String.valueOf(prestamos.length), "#ff4d4d"),
@@ -87,7 +88,7 @@ public class EstadisticasView extends VerticalLayout {
         );
         return barra;
     }
-
+    //funcion que permite crear cada tarjetica para las estadisticas de la funcion anterior
     private VerticalLayout crearTarjetaEst(String etiqueta, String valor, String colorValor) {
         VerticalLayout tarjeta = new VerticalLayout();
         tarjeta.setPadding(true);
@@ -114,7 +115,7 @@ public class EstadisticasView extends VerticalLayout {
     // Panel con una barra de porcentaje por cada tipo
     private VerticalLayout crearPanelPorTipo(ElementoMultimedia[] elementos) {
         VerticalLayout panel = crearPanel("Distribución por Tipo");
-
+        //recorre los tipos y cuenta cuantos hay de cada uno en los elementos registrados
         TipoMultimedia[] tipos = TipoMultimedia.values();
         for (int i = 0; i < tipos.length; i++) {
             int contador = 0;
@@ -137,6 +138,7 @@ public class EstadisticasView extends VerticalLayout {
         grillaEstados.getStyle().set("gap", "12px");
         grillaEstados.getStyle().set("flex-wrap", "wrap");
 
+        //recorre cada estado y cuenta cuantos elementos hay que tengan cada estado
         EstadoMultimedia[] estados = EstadoMultimedia.values();
         for (int i = 0; i < estados.length; i++) {
             int contador = 0;
@@ -145,7 +147,7 @@ public class EstadisticasView extends VerticalLayout {
                     contador++;
                 }
             }
-
+            //segun el estado se le asigna color
             String colorValor;
             switch (estados[i]) {
                 case COMPLETADO:
@@ -161,12 +163,12 @@ public class EstadisticasView extends VerticalLayout {
                     colorValor = "#ff4d4d";
                     break;
             }
-
-            String nombreEstado = estados[i].name().replace("_", " ");
+            String nombreEstado = estados[i].name().replace("_", " ").toLowerCase();
+            nombreEstado = nombreEstado.substring(0, 1).toUpperCase() + nombreEstado.substring(1);
             VerticalLayout tarjetaEstado = crearTarjetaEst(nombreEstado, String.valueOf(contador), colorValor);
             tarjetaEstado.getStyle().set("background-color", "#111111");
             tarjetaEstado.getStyle().set("min-width", "130px");
-            grillaEstados.add(tarjetaEstado);
+            grillaEstados.add(tarjetaEstado);  //añado tarjeta por tarjeta
         }
 
         panel.add(grillaEstados);
@@ -176,7 +178,7 @@ public class EstadisticasView extends VerticalLayout {
     private VerticalLayout crearPanelPorGenero(ElementoMultimedia[] elementos) {
         VerticalLayout panel = crearPanel("Top 3 Géneros");
 
-        // Arreglos paralelos: el género en generos[i] tiene cantidades[i] elementos
+        // Arreglos paralelos 
         String[] generos = funciones.generosUnicos(elementos);
         int[] cantidades = new int[generos.length];
         for (int i = 0; i < generos.length; i++) {
@@ -267,7 +269,7 @@ public class EstadisticasView extends VerticalLayout {
         if (ordenados.length < 5) {
             cantidadTop = ordenados.length;
         }
-
+        //creamos el top con los mejor calificados,titulo, tipo y genero y sus eestrellas
         for (int i = 0; i < cantidadTop; i++) {
             ElementoMultimedia e = ordenados[i];
 
@@ -334,7 +336,7 @@ public class EstadisticasView extends VerticalLayout {
         barraFondo.getStyle().set("background-color", "#2a2a2a");
         barraFondo.getStyle().set("border-radius", "4px");
         barraFondo.getStyle().set("margin-top", "4px");
-        barraFondo.getStyle().set("overflow", "hidden");
+        barraFondo.getStyle().set("overflow", "hidden"); //esconde lo que se salga de la barra contenedor
 
         FlexLayout barraRelleno = new FlexLayout();
         barraRelleno.setWidth(porcentaje + "%");

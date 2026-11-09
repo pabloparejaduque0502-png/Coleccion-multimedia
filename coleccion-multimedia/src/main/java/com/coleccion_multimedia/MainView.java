@@ -28,14 +28,13 @@ import com.vaadin.flow.router.PageTitle;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.server.streams.DownloadHandler;
 import com.vaadin.flow.server.streams.UploadHandler;
-
 import java.time.LocalDate;
 
-@Route(value = "", layout = MainLayout.class)
+@Route(value = "", layout = MainLayout.class) //establece que mainview, se vera dentro del maarco de mainlayout
 @PageTitle("Akatsuki Media - Mi Colección")
 public class MainView extends VerticalLayout {
 
-    public FlexLayout contenedorTarjetas = new FlexLayout();
+    public FlexLayout contenedorTarjetas = new FlexLayout();  //se escogio un flexlayout ya que es mucho mas flexible, se adapta con menos trabajo segun la cantidad de elementos que haya
     public TextField txtBuscar = new TextField();
     public Select<TipoMultimedia> filtroTipo = new Select<>();
 
@@ -48,9 +47,9 @@ public class MainView extends VerticalLayout {
     public TextField txtCreador = new TextField("Creador (Director/Artista)");
     public Estrellas ratingCalificacion = new Estrellas();
     public ComboBox<EstadoMultimedia> cbEstado = new ComboBox<>("Estado");
-    public Upload uploadPortada;
+    public Upload uploadPortada;  //lo que nos permitira subir el archivo de la imagen
     public String nombreArchivoSubido = funciones.PORTADA_ELEMENTO;
-    public byte[] bytesImagenSubida = null;
+    public byte[] bytesImagenSubida = null; //donde se guardaran los bytes de la imagen
 
     // Si es null se está creando un elemento, si tiene un id se está editando ese elemento
     public String idEditando = null;
@@ -64,15 +63,15 @@ public class MainView extends VerticalLayout {
         contenedorTarjetas.setWidthFull();
         contenedorTarjetas.getStyle().set("flex-wrap", "wrap");
         contenedorTarjetas.getStyle().set("gap", "20px");
-        contenedorTarjetas.getStyle().set("align-items", "flex-start");
+        contenedorTarjetas.getStyle().set("align-items", "flex-start"); //cada tarjeta se queda pegada arriba y no se estira incluso si otra abre sus detalles
 
         // Buscador y filtro por tipo
         txtBuscar.setPlaceholder("Buscar por título, género, creador o año...");
         txtBuscar.setMaxWidth("600px");
         txtBuscar.setWidthFull();
         txtBuscar.setClearButtonVisible(true);
-        txtBuscar.setValueChangeMode(ValueChangeMode.EAGER);
-        txtBuscar.addValueChangeListener(e -> cargarTarjetas());
+        txtBuscar.setValueChangeMode(ValueChangeMode.EAGER); //avisa cada cambio
+        txtBuscar.addValueChangeListener(e -> cargarTarjetas());//cada aviso recarga las ttarjetas
 
         filtroTipo.setItems(TipoMultimedia.values());
         filtroTipo.setPlaceholder("Todos los tipos");
@@ -92,7 +91,7 @@ public class MainView extends VerticalLayout {
         // Sugiere los géneros que ya existen, pero deja escribir uno nuevo
         cbGenero.setAllowCustomValue(true);
         cbGenero.setPlaceholder("Elige uno o escribe uno nuevo");
-        cbGenero.addCustomValueSetListener(e -> cbGenero.setValue(e.getDetail().trim()));
+        cbGenero.addCustomValueSetListener(e -> cbGenero.setValue(e.getDetail().trim()));//agrega el nuevo valor del usuario al combobox
 
         Span lblCalificacion = new Span("Calificación");
         lblCalificacion.getStyle().set("font-size", "var(--lumo-font-size-s)");
@@ -102,8 +101,8 @@ public class MainView extends VerticalLayout {
         VerticalLayout campoCalificacion = new VerticalLayout(lblCalificacion, ratingCalificacion);
         campoCalificacion.setPadding(false);
         campoCalificacion.setSpacing(false);
-
-        UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
+        //guarda la imagen en memoria ram mientras el usuario presionaa guardar y se encargaa de gestionar lo que pasa cuando se sube la imagen
+        UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> { //metadata guarda informacion del aarchivo como el nombre,data tiene el archivo como byte[]
             nombreArchivoSubido = metadata.fileName();
             bytesImagenSubida = data;
         });
@@ -129,6 +128,7 @@ public class MainView extends VerticalLayout {
 
         FormLayout formulario = new FormLayout();
         formulario.add(txtTitulo, cbTipo, cbGenero, txtAnio, txtCreador, campoCalificacion, cbEstado, uploadPortada);
+        //indica que el uplouad ocupa 2 columnas
         formulario.setColspan(uploadPortada, 2);
 
         dialogFormulario.add(formulario);
@@ -154,7 +154,7 @@ public class MainView extends VerticalLayout {
         add(barraSuperior, contenedorTarjetas);
         cargarTarjetas();
     }
-
+        //funcion que haace todas las validaciones de lo que se ingresa en el formulario y guarda el elemento
     public void guardarElemento() {
                 if (funciones.estaVacio(txtTitulo.getValue()) || cbTipo.getValue() == null || funciones.estaVacio(cbGenero.getValue()) ||
             txtAnio.isEmpty() || funciones.estaVacio(txtCreador.getValue()) || ratingCalificacion.valor == 0 || cbEstado.getValue() == null) {
@@ -191,7 +191,7 @@ public class MainView extends VerticalLayout {
                 cbGenero.getValue().trim(), anio, txtCreador.getValue().trim(), ratingCalificacion.valor, cbEstado.getValue(), nombreImagen);
 
             funciones.guardarElemento(nuevo);
-            Notification.show("¡Elemento guardado en el archivo!");
+            Notification.show("¡Elemento guardado!");
         } else {
             // Si se cambió la portada, la vieja se borra para no dejar imágenes sin usar
             if (!nombreImagen.equals(imagenActual)) {
@@ -211,12 +211,11 @@ public class MainView extends VerticalLayout {
     }
 
     // Convierte el estado del enum en un texto para mostrar: EN_PROCESO -> "En proceso"
-    // (el enum no puede tener espacios, por eso se guarda con _)
     public String textoEstado(EstadoMultimedia estado) {
         String texto = estado.name().replace("_", " ").toLowerCase();
         return texto.substring(0, 1).toUpperCase() + texto.substring(1);
     }
-
+    //borra todo lo que se habia ingresado en el formulario, para que no se cargue la proxima vez que se abra
     public void limpiarFormulario() {
         txtTitulo.clear();
         cbTipo.clear();
@@ -234,7 +233,7 @@ public class MainView extends VerticalLayout {
         idEditando = null;
         imagenActual = funciones.PORTADA_ELEMENTO;
     }
-
+    //muestra las tarjetass en la interfaz revisando los filtros o busqueda ingressados
     public void cargarTarjetas() {
         contenedorTarjetas.removeAll();
 
@@ -245,7 +244,7 @@ public class MainView extends VerticalLayout {
         for (int i = 0; i < elementos.length; i++) {
             ElementoMultimedia e = elementos[i];
 
-            // Filtro por tipo
+            // Filtro por tipo,//si es null es porque esta en todos los tipos
             if (filtroTipo.getValue() != null && e.tipo != filtroTipo.getValue()) {
                 continue;
             }
@@ -264,7 +263,7 @@ public class MainView extends VerticalLayout {
             contenedorTarjetas.add(crearTarjeta(e));
             tarjetasMostradas++;
         }
-
+        //si no se mostro nada, revisa porque y segun eso arroja un mensaje
         if (tarjetasMostradas == 0) {
             String textoMensaje;
             if (filtroTipo.getValue() != null || !busqueda.isEmpty()) {
@@ -290,13 +289,13 @@ public class MainView extends VerticalLayout {
         tarjeta.getStyle().set("border", "1px solid #2a2a2a");
         tarjeta.getStyle().set("border-radius", "12px");
         tarjeta.getStyle().set("background-color", "#181818");
-        tarjeta.getStyle().set("box-shadow", "0 4px 10px rgba(0, 0, 0, 0.3)");
+        tarjeta.getStyle().set("box-shadow", "0 4px 10px rgba(0, 0, 0, 0.3)"); //sombra debajo de la tarjeta paara que parezca que flota
         tarjeta.getStyle().set("cursor", "pointer");
-
-        Image imgPortada = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo);
+        //download handler es el opuesto de uploadhandler, este se encarga de que el disco envie la imagen al navegador y se cree una direccion web temporal
+        Image imgPortada = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo); //titulo es lo que se muestra si la imagen no carga
         imgPortada.setWidth("100%");
         imgPortada.setHeight("200px");
-        imgPortada.getStyle().set("object-fit", "contain");
+        imgPortada.getStyle().set("object-fit", "contain"); //hace que la imagen se vea completa, la aadapta al tamaño de la tarjeta sin deformarla
         imgPortada.getStyle().set("background-color", "#111111");
         imgPortada.getStyle().set("border-radius", "8px");
 
@@ -307,8 +306,8 @@ public class MainView extends VerticalLayout {
             dialogPortada.setHeaderTitle(e.titulo);
 
             Image imgGrande = new Image(DownloadHandler.forFile(funciones.archivoPortada(e.imagen, funciones.PORTADA_ELEMENTO)), e.titulo);
-            imgGrande.setWidth("min(500px, 80vw)");
-            imgGrande.getStyle().set("max-height", "70vh");
+            imgGrande.setWidth("min(500px, 80vw)");//80% de pantalla
+            imgGrande.getStyle().set("max-height", "70vh"); //70% de pantalla
             imgGrande.getStyle().set("object-fit", "contain");
 
             Button btnCerrar = new Button("Cerrar", eventCerrar -> dialogPortada.close());
@@ -330,7 +329,7 @@ public class MainView extends VerticalLayout {
         tarjeta.add(imgPortada, lblTitulo, estrellasLectura, crearDetalles(e));
         return tarjeta;
     }
-
+    //creamos la ficha desplegable con mas informacion
     public Details crearDetalles(ElementoMultimedia e) {
         Span lblDetalles = new Span("Tipo: " + e.tipo + "  |  Género: " + e.genero);
         lblDetalles.getStyle().set("color", "#e0e0e0");
@@ -345,7 +344,7 @@ public class MainView extends VerticalLayout {
         lblEstado.getStyle().set("color", "#ffffff");
         lblEstado.getStyle().set("font-size", "0.85rem");
 
-        // Editar: llena el formulario con los datos del elemento y lo abre
+        // Editar  llena el formulario con los datos del elemento y lo abre
         Button btnEditar = new Button("Editar", eventEdit -> {
             limpiarFormulario();
 
@@ -367,7 +366,7 @@ public class MainView extends VerticalLayout {
         btnEditar.getStyle().set("background-color", "#2a2a2a");
         btnEditar.setWidthFull();
 
-        // Eliminar: pide confirmación antes de borrar
+        // Eliminar un elemento pide confirmación antes de borrar
         Button btnEliminar = new Button("Eliminar", eventDel -> {
             Dialog dialogConfirmacion = new Dialog();
             dialogConfirmacion.setHeaderTitle("¿Eliminar elemento?");
@@ -392,12 +391,12 @@ public class MainView extends VerticalLayout {
         });
         btnEliminar.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
         btnEliminar.setWidthFull();
-
+        //lo que se ve cuando se despliega
         VerticalLayout layoutContenido = new VerticalLayout(lblDetalles, lblCreadorAnio, lblEstado, btnEditar, btnEliminar);
         layoutContenido.setPadding(false);
         layoutContenido.setSpacing(true);
         layoutContenido.getStyle().set("margin-top", "10px");
-
+        //lo que siempre se ve
         Span lblSummary = new Span("Ver detalles");
         lblSummary.getStyle().set("color", "#ffffff");
         lblSummary.getStyle().set("font-size", "0.85rem");

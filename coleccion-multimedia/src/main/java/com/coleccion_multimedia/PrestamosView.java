@@ -54,7 +54,7 @@ public class PrestamosView extends VerticalLayout {
         // Formulario
         Dialog dialogFormulario = new Dialog();
         dialogFormulario.setHeaderTitle("Registrar Nuevo Préstamo");
-
+        //las opciones del combobox, son los elementos multimedia que estan en el archivo
         ComboBox<ElementoMultimedia> cbElemento = new ComboBox<>("Elemento Multimedia");
         cbElemento.setItems(funciones.leerElementos());
         cbElemento.setItemLabelGenerator(e -> e.titulo + " (" + e.tipo + ")");
@@ -66,7 +66,7 @@ public class PrestamosView extends VerticalLayout {
         dpFechaPrestamo.setValue(LocalDate.now());
 
         DatePicker dpFechaDevolucion = new DatePicker("Fecha acordada de devolución (Opcional)");
-
+        //se hacen todas las validaciones
         Button btnGuardar = new Button("Guardar", event -> {
                 if (cbElemento.isEmpty() || funciones.estaVacio(txtPrestadoA.getValue()) || dpFechaPrestamo.isEmpty()) {
                 Notification.show("Por favor, completa los campos obligatorios.");
@@ -121,7 +121,14 @@ public class PrestamosView extends VerticalLayout {
         H2 titulo = new H2("Préstamos");
         titulo.getStyle().set("color", "#ffffff");
 
-        Button btnNuevo = new Button("+ Nuevo Préstamo", e -> dialogFormulario.open());
+        // Antes de abrir se limpia, para que no queden datos de un préstamo cancelado
+        Button btnNuevo = new Button("+ Nuevo Préstamo", e -> {
+            cbElemento.clear();
+            txtPrestadoA.clear();
+            dpFechaPrestamo.setValue(LocalDate.now());
+            dpFechaDevolucion.clear();
+            dialogFormulario.open();
+        });
         btnNuevo.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
         HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar, btnNuevo);
@@ -278,7 +285,7 @@ public class PrestamosView extends VerticalLayout {
         btnEditar.getStyle().set("background-color", "#2a2a2a");
         btnEditar.setWidthFull();
 
-        // Marcar devuelto: pide confirmación y borra el préstamo
+        // Marcar devuelto pide confirmación y borra el préstamo
         Button btnDevolver = new Button("Marcar Devuelto", eventDev -> {
             Dialog dialogConfirmacion = new Dialog();
             dialogConfirmacion.setHeaderTitle("¿Confirmar devolución?");

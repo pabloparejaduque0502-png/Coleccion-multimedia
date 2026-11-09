@@ -31,7 +31,8 @@ public class Estrellas extends HorizontalLayout {
         setSpacing(true);
 
         for (int i = 0; i < 5; i++) {
-            final int puntuacion = i + 1;
+            //es final int para qque no se pueda modificar el valor de la puntuacion, ya que se usa dentro de un lambda y no se puede usar una variable que no sea final
+            final int puntuacion = i + 1;   //se le aasigna un valor a cada estrella de 1 a 5, para que cuando se haga click en una estrella se pueda asignar el valor correspondiente a la puntuacion
             Icon estrella = VaadinIcon.STAR.create();
 
             if (this.esEditable) {
@@ -39,7 +40,7 @@ public class Estrellas extends HorizontalLayout {
                 estrella.addClickListener(event -> cambiarPuntuacion(puntuacion));
             }
 
-            estrellas[i] = estrella;
+            estrellas[i] = estrella; //aca se llena el arreglo de iconos con las estrellas creadas
             add(estrella);
         }
 
@@ -48,7 +49,7 @@ public class Estrellas extends HorizontalLayout {
 
     // Asigna el valor directamente al atributo público y refresca el color
     public void cambiarPuntuacion(int nuevaPuntuacion) {
-        this.valor = nuevaPuntuacion;
+        this.valor = nuevaPuntuacion;  
         actualizarVisualizacion();
     }
 
@@ -59,13 +60,13 @@ public class Estrellas extends HorizontalLayout {
                 estrellas[i].getStyle().set("color", "gold");
                 estrellas[i].getStyle().set("opacity", "1.0");
             } else {
-                estrellas[i].getStyle().set("color", "var(--lumo-contrast-30pct)");
-                estrellas[i].getStyle().set("opacity", "0.4");
+                estrellas[i].getStyle().set("color", "var(--lumo-contrast-30pct)"); //color contraario al fondo, 30pct, el 30% de intensidad
+                estrellas[i].getStyle().set("opacity", "0.4"); //opacidad de 0.4 para que se vea un poco transparentoso
             }
         }
     }
 
-    // Reinicia el valor a 0
+    // Reinicia el valor a 0 para los formularios, para que no se cargue con los valores anteriores
     public void limpiar() {
         this.valor = 0;
         actualizarVisualizacion();

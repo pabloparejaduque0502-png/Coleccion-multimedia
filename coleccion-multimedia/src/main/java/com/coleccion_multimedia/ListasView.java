@@ -33,6 +33,14 @@ public class ListasView extends VerticalLayout {
     public FlexLayout contenedorTarjetas = new FlexLayout();
     public TextField txtBuscar = new TextField();
 
+    // Portada subida en el formulario de crear lista (null = no se ha subido ninguna)
+    public String nombreArchivoSubido = funciones.PORTADA_LISTA;
+    public byte[] bytesImagenSubida = null;
+
+    // Portada subida en el diálogo de editar lista ya que es un dialogo distinto al del formulario
+    public String nombreArchivoEditar = funciones.PORTADA_LISTA;
+    public byte[] bytesImagenEditar = null;
+
     public ListasView() {
         setWidthFull();
         setMinHeight("100%");
@@ -58,19 +66,16 @@ public class ListasView extends VerticalLayout {
         TextField txtNombreLista = new TextField("Nombre de la Lista");
         TextArea txtDescripcion = new TextArea("Descripción (Opcional)");
         txtDescripcion.setPlaceholder("Ej. Mis películas favoritas de fin de semana...");
-
+        //elemento del formulario que permite que escojan varios elementos para la lista
         MultiSelectComboBox<ElementoMultimedia> mcbElementos = new MultiSelectComboBox<>("Seleccionar Elementos");
         mcbElementos.setItems(funciones.leerElementos());
         mcbElementos.setItemLabelGenerator(e -> e.titulo + " (" + e.tipo + ")");
         mcbElementos.setPlaceholder("Selecciona uno o varios elementos...");
         mcbElementos.setWidthFull();
 
-        String[] nombreArchivoSubido = new String[]{ funciones.PORTADA_LISTA };
-        byte[][] bytesImagenSubida = new byte[1][];
-
         UploadHandler handlerImagen = UploadHandler.inMemory((metadata, data) -> {
-            nombreArchivoSubido[0] = metadata.fileName();
-            bytesImagenSubida[0] = data;
+            nombreArchivoSubido = metadata.fileName();
+            bytesImagenSubida = data;
         });
 
         Upload uploadPortada = new Upload(handlerImagen);
@@ -79,8 +84,8 @@ public class ListasView extends VerticalLayout {
         uploadPortada.setMaxFiles(1);
         // Si se quita la imagen con la X, se olvida la imagen subida
         uploadPortada.addFileRemovedListener(e -> {
-            nombreArchivoSubido[0] = funciones.PORTADA_LISTA;
-            bytesImagenSubida[0] = null;
+            nombreArchivoSubido = funciones.PORTADA_LISTA;
+            bytesImagenSubida = null;
         });
         // Si la imagen no es JPG/PNG o pesa más de 2 MB, se avisa
         uploadPortada.addFileRejectedListener(e -> Notification.show("Solo se permiten imágenes JPG o PNG de máximo 2 MB."));
@@ -96,8 +101,8 @@ public class ListasView extends VerticalLayout {
             }
 
             String nombreImagen = funciones.PORTADA_LISTA;
-            if (bytesImagenSubida[0] != null) {
-                nombreImagen = funciones.guardarPortada(bytesImagenSubida[0], nombreArchivoSubido[0]);
+            if (bytesImagenSubida != null) {
+                nombreImagen = funciones.guardarPortada(bytesImagenSubida, nombreArchivoSubido);
                 if (nombreImagen == null) {
                     Notification.show("Error al guardar la imagen de la lista.");
                     return;
@@ -122,8 +127,8 @@ public class ListasView extends VerticalLayout {
             txtDescripcion.clear();
             mcbElementos.clear();
             uploadPortada.clearFileList();
-            nombreArchivoSubido[0] = funciones.PORTADA_LISTA;
-            bytesImagenSubida[0] = null;
+            nombreArchivoSubido = funciones.PORTADA_LISTA;
+            bytesImagenSubida = null;
 
             cargarTarjetas();
             dialogFormulario.close();
@@ -146,7 +151,16 @@ public class ListasView extends VerticalLayout {
         H2 titulo = new H2("Mis Listas");
         titulo.getStyle().set("color", "#ffffff");
 
-        Button btnNueva = new Button("+ Nueva Lista", e -> dialogFormulario.open());
+        // Antes de abrir se limpia, para que no queden datos ni la imagen de una lista cancelada
+        Button btnNueva = new Button("+ Nueva Lista", e -> {
+            txtNombreLista.clear();
+            txtDescripcion.clear();
+            mcbElementos.clear();
+            uploadPortada.clearFileList();
+            nombreArchivoSubido = funciones.PORTADA_LISTA;
+            bytesImagenSubida = null;
+            dialogFormulario.open();
+        });
         btnNueva.addThemeVariants(ButtonVariant.LUMO_PRIMARY, ButtonVariant.LUMO_ERROR);
 
         HorizontalLayout barraSuperior = new HorizontalLayout(titulo, txtBuscar, btnNueva);
@@ -279,6 +293,7 @@ public class ListasView extends VerticalLayout {
             lblItem.getStyle().set("color", "#cccccc");
             lblItem.getStyle().set("font-size", "0.85rem");
 
+            //eliminacion de un elemento de la lista
             Button btnQuitar = new Button("✕", eventQuitar -> {
                 Dialog dialogConfirmacion = new Dialog();
                 dialogConfirmacion.setHeaderTitle("¿Quitar elemento de la lista?");
@@ -363,7 +378,7 @@ public class ListasView extends VerticalLayout {
         barraAgregar.setWidthFull();
         barraAgregar.setAlignItems(Alignment.BASELINE);
 
-        // Editar nombre, descripción y portada (los elementos ya se añaden y quitan arriba)
+        // Editar nombre, descripción y portada 
         Button btnEditar = new Button("Editar Lista", eventEdit -> {
             Dialog dialogEditar = new Dialog();
             dialogEditar.setHeaderTitle("Editar Lista");
@@ -376,12 +391,13 @@ public class ListasView extends VerticalLayout {
                 txtDescripcionEditar.setValue(l.descripcion);
             }
 
-            String[] nombreArchivoEditar = new String[]{ funciones.PORTADA_LISTA };
-            byte[][] bytesImagenEditar = new byte[1][];
+            // Se limpia la portada subida, para que no quede la de otra lista que se editó antes
+            nombreArchivoEditar = funciones.PORTADA_LISTA;
+            bytesImagenEditar = null;
 
             UploadHandler handlerEditar = UploadHandler.inMemory((metadata, data) -> {
-                nombreArchivoEditar[0] = metadata.fileName();
-                bytesImagenEditar[0] = data;
+                nombreArchivoEditar = metadata.fileName();
+                bytesImagenEditar = data;
             });
 
             Upload uploadEditar = new Upload(handlerEditar);
@@ -389,8 +405,8 @@ public class ListasView extends VerticalLayout {
             uploadEditar.setMaxFileSize(2 * 1024 * 1024);
             uploadEditar.setMaxFiles(1);
             uploadEditar.addFileRemovedListener(e -> {
-                nombreArchivoEditar[0] = funciones.PORTADA_LISTA;
-                bytesImagenEditar[0] = null;
+                nombreArchivoEditar = funciones.PORTADA_LISTA;
+                bytesImagenEditar = null;
             });
             uploadEditar.addFileRejectedListener(e -> Notification.show("Solo se permiten imágenes JPG o PNG de máximo 2 MB."));
 
@@ -405,8 +421,8 @@ public class ListasView extends VerticalLayout {
                 }
 
                 // Si se subió una portada nueva, se guarda y la vieja se borra para no dejar imágenes sin usar
-                if (bytesImagenEditar[0] != null) {
-                    String nombreImagen = funciones.guardarPortada(bytesImagenEditar[0], nombreArchivoEditar[0]);
+                if (bytesImagenEditar != null) {
+                    String nombreImagen = funciones.guardarPortada(bytesImagenEditar, nombreArchivoEditar);
                     if (nombreImagen == null) {
                         Notification.show("Error al guardar la imagen de la lista.");
                         return;
