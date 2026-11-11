@@ -152,7 +152,9 @@ Muestra un resumen de la colección: los totales, la calificación promedio, la 
 La aplicación avisa con un mensaje cuando:
 - Hay campos obligatorios vacíos.
 - Algún texto tiene el carácter `|` (porque es el que separa los datos en los archivos).
-- El año no es un número válido.
+- El año no está entre 1800 y el año actual.
+- No se le puso calificación al elemento.
+- La portada no es JPG o PNG, o pesa más de 2 MB.
 - Se intenta prestar un elemento que ya está prestado.
 - La fecha de devolución es anterior a la fecha del préstamo.
 - Se intenta añadir a una lista elementos que ya están en ella.
@@ -179,7 +181,7 @@ La aplicación se adapta a pantallas pequeñas: el menú y la barra de búsqueda
 ## Cómo probar el bono (portadas)
 1. En **Mi colección**, dar clic en **+ Nuevo Elemento**, llenar los datos y subir una imagen **JPG o PNG de máximo 2 MB**. Al guardar, la tarjeta muestra la miniatura de la portada.
 2. Dar clic sobre la portada para verla en grande.
-3. Intentar subir un archivo de más de 2 MB o que no sea imagen: la aplicación no lo deja subir.
+3. Intentar subir un archivo de más de 2 MB o que no sea imagen: la aplicación no lo deja subir y muestra un mensaje.
 4. Revisar la carpeta `coleccion-multimedia/portadas`: la imagen se guarda con un nombre único (un número al inicio + el nombre original), así que dos imágenes con el mismo nombre no se pisan.
 5. Eliminar el elemento y revisar otra vez la carpeta `portadas`: la imagen también se borra.
 6. Las listas también permiten subir su propia portada de la misma forma.
